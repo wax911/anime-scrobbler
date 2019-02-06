@@ -1,0 +1,4 @@
+nyaapy
+pickledb
+plexapi
+gql
