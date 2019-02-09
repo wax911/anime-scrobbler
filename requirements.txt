@@ -2,3 +2,4 @@ nyaapy
 pickledb
 plexapi
 gql
+dacite
