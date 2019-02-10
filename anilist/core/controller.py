@@ -7,7 +7,7 @@ from app import StorageUtil, EventLogHelper
 from ..data import PickleStore
 
 
-class HttpController:
+class AniListController:
 
     __request_url = 'https://graphql.anilist.co'
 

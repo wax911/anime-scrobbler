@@ -1,2 +1,2 @@
-from .core import HttpController
+from .core import AniListController
 

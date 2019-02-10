@@ -1,1 +1,1 @@
-from .controller import HttpController
+from .controller import AniListController
