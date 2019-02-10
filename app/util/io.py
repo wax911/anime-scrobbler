@@ -3,7 +3,7 @@ import json
 import logging
 from pathlib import Path
 from datetime import datetime
-from typing import Optional, Any, Union
+from typing import Optional, Any
 
 
 class StorageUtil:
@@ -40,7 +40,8 @@ class StorageUtil:
                 contents = reader.read()
             return contents
         else:
-            print(f"File cannot be found..\n{file_path}")
+            EventLogHelper.log_error(f"File cannot be found..\n"
+                                     f"file_path -> {file_path}")
             return None
 
     @staticmethod
@@ -96,21 +97,11 @@ class EventLogHelper:
                        f"\n---------------------------------------------------------------\n")
 
     @staticmethod
-    def log_error(message: Any):
+    def log_error(message: Any, log_level=logging.ERROR):
         logging.basicConfig(filename=EventLogHelper.__get_log_file("ERROR"),
                             format='%(asctime)s | %(levelname)s | %(message)s',
-                            datefmt='%d/%m/%Y %I:%M:%S %p', level=logging.ERROR)
+                            datefmt='%d/%m/%Y %I:%M:%S %p', level=log_level)
         logger = logging.getLogger(__name__)
         logger.error(f"\n---------------------------------------------------------------\n"
                      f"{message}"
                      f"\n---------------------------------------------------------------\n")
-
-    @staticmethod
-    def log_critical(message: Any):
-        logging.basicConfig(filename=EventLogHelper.__get_log_file("CRITICAL"),
-                            format='%(asctime)s | %(levelname)s | %(message)s',
-                            datefmt='%d/%m/%Y %I:%M:%S %p', level=logging.CRITICAL)
-        logger = logging.getLogger(__name__)
-        logger.critical(f"\n---------------------------------------------------------------\n"
-                        f"{message}"
-                        f"\n---------------------------------------------------------------\n")
