@@ -1,3 +1,4 @@
+import logging
 from typing import Optional
 from gql import Client, gql
 from gql.transport.requests import RequestsHTTPTransport
@@ -8,7 +9,6 @@ from ..data import PickleStore
 
 
 class AniListController:
-
     __request_url = 'https://graphql.anilist.co'
 
     def __init__(self) -> None:
@@ -44,5 +44,5 @@ class AniListController:
             for entry in media_lists:
                 pickle_store.save(entry["status"], entry)
         except Exception as e:
-            EventLogHelper.log_critical(f"__handle_response(response: Optional[dict]):\n"
-                                        f"Exception -> {e}")
+            EventLogHelper.log_error(f"__handle_response(response: Optional[dict]):\n"
+                                     f"Exception -> {e}", logging.CRITICAL)

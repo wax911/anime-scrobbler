@@ -1,5 +1,5 @@
 from .database import PickleStore
-from .model import MediaListGroup
+from .model import MediaListGroup, MediaTitle
 
 LIST_KEY_CURRENT = "CURRENT"
 LIST_KEY_PLANNING = "PLANNING"
