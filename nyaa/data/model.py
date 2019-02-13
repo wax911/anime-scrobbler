@@ -1,8 +1,9 @@
 from dataclasses import dataclass
+from typing import Optional, List
 
 
 @dataclass()
-class NyaaResult:
+class TorrentInfo:
     category: str
     url: str
     name: str
@@ -14,3 +15,7 @@ class NyaaResult:
     leechers: str
     completed_downloads: str
 
+
+@dataclass()
+class TorrentWrapper:
+    response: Optional[List[TorrentInfo]]
