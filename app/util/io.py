@@ -45,12 +45,12 @@ class StorageUtil:
             return None
 
     @staticmethod
-    def write_file(src_path: str, directory_path: str, filename: str, contents) -> None:
+    def write_file(src_path: str, directory_path: str, filename: str, contents: Any, write_mode='w+') -> None:
         creation_path = os.path.join(src_path, directory_path)
         if not os.path.exists(creation_path):
             path = Path(creation_path)
             path.mkdir(parents=True, exist_ok=True)
-        with open(os.path.join(creation_path, filename), "w+") as writer:
+        with open(os.path.join(creation_path, filename), write_mode) as writer:
             writer.write(contents)
 
     @staticmethod

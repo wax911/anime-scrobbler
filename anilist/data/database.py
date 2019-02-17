@@ -4,13 +4,14 @@ from dacite import from_dict
 
 from app import EventLogHelper, StorageUtil
 from .model import MediaListGroup
+from . import ANILIST_DATABASE
 
 
 class PickleStore:
 
     def __init__(self) -> None:
         super().__init__()
-        src = StorageUtil.create_base_path('anilist.db')
+        src = StorageUtil.create_base_path(ANILIST_DATABASE)
         self.db = pickledb.load(location=src, auto_dump=True)
 
     def save(self, key: str, value: dict):

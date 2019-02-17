@@ -23,16 +23,7 @@ class AniListController:
 
     def make_request(self):
         request = self.__create_request()
-        params = '''
-        {
-            "userId": 80546,
-            "userName": "wax911",
-            "type": "ANIME",
-            "statusIn": ["CURRENT","PLANNING","COMPLETED","PAUSED","DROPPED","REPEATING"],
-            "forceSingleCompletedList": true,
-            "sort": "MEDIA_ID"
-        }
-        '''
+        params = StorageUtil.read_file('config', 'anilist.json')
         response = self.client.execute(request, variable_values=params)
         self.__handle_response(response)
 

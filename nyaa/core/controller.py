@@ -1,3 +1,4 @@
+from requests import get, Response
 from typing import Optional, List
 from NyaaPy import Nyaa
 from anilist import MediaTitle
@@ -5,6 +6,7 @@ from anilist import MediaTitle
 from dacite import from_dict
 
 from ..data import TorrentWrapper, TorrentInfo
+from app import StorageUtil, EventLogHelper
 
 
 class NyaaController:
@@ -27,4 +29,12 @@ class NyaaController:
 
     @staticmethod
     def download_torrent_file(torrent_info: TorrentInfo):
-        pass
+        """
+        Downloads a .torrent file and saves it into the app/torrents/ directory
+        :param torrent_info:
+        :return:
+        """
+        StorageUtil.read_file('config', 'app.json')
+        response: Response = get(torrent_info.url)
+        StorageUtil.write_file(src_path='', directory_path='', filename=torrent_info.name,
+                               contents=response, write_mode='wb')

@@ -1,29 +1,24 @@
 import argparse
-from anilist import AniListController, MediaTitle
-from plex import PlexController
-from nyaa import NyaaController
+from typing import List
+
+from app import AppController
+from anilist.data import LIST_KEY_CURRENT, LIST_KEY_PLANNING, LIST_KEY_COMPLETED, LIST_KEY_PAUSED, LIST_KEY_REPEATING
 
 
 def __description() -> str:
-    return "Just another anime scrobbler.."
+    return "Just a little utility for research purposes (wink, wink).."
 
 
 def __usage() -> str:
-    return "manage.py --test anilist" + \
-           "\n" + \
-           "manage.py --test nyaa" + \
-           "\n" + \
-           "manage.py --test plex" + \
-           "\n" + \
-           "manage.py --run app"
+    return f"manage.py --from-list list_name_1, list_name_2\n\n" \
+        f"Where list_name is one or more of the following:\n" \
+        f"{LIST_KEY_CURRENT}, {LIST_KEY_PLANNING}, {LIST_KEY_COMPLETED}, {LIST_KEY_PAUSED}, {LIST_KEY_REPEATING}\n"
 
 
 def __init_cli() -> argparse:
     parser = argparse.ArgumentParser(description=__description(), usage=__usage())
-    parser.add_argument('-t', '--test', default='nyaa',
-                        help="test different modules")
-    parser.add_argument('-r', '--run', default='app',
-                        help="run the production module")
+    parser.add_argument('-fl', '--from-list', default=LIST_KEY_CURRENT, type=List,
+                        help="Run the utility and download torrent files in the defined list types")
     return parser
 
 
@@ -34,23 +29,8 @@ def __print_program_end() -> None:
 
 
 def __init_app(args: argparse) -> None:
-    test = args.test
-    run = args.run
-    if test is not None:
-        if test == 'anilist':
-            AniListController().make_request()
-        elif test == 'nyaa':
-            NyaaController.search_for_show(MediaTitle(
-                english='The Rising of the Shield Hero',
-                romaji='Tate no Yuusha no Nariagari',
-                native='盾の勇者の成り上がり',
-                userPreferred='Tate no Yuusha no Nariagari'
-            ))
-        elif test == 'plex':
-            PlexController().find_all_by_title('Anime')
-    elif run is not None:
-        if run == 'app':
-            pass
+    if args.run is not None:
+        AppController(args.run).start_application()
     else:
         print()
         print("For instructions on how to use this program, please run:\nmanage.py --help")
