@@ -169,4 +169,7 @@ venv.bak/
 *.json
 # End of https://www.gitignore.io/api/python,pycharm
 
-logs/
+# Application logs
+app/logs/
+# Ignore downloads
+app/torrents/
