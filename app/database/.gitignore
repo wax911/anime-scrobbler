@@ -1,0 +1,2 @@
+# Excluding application generated databases
+*.db
