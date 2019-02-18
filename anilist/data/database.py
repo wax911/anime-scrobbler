@@ -4,7 +4,9 @@ from dacite import from_dict
 
 from app import EventLogHelper, StorageUtil
 from .model import MediaListGroup
-from . import ANILIST_DATABASE
+
+
+ANILIST_DATABASE = 'database/anilist.db'
 
 
 class PickleStore:
@@ -24,7 +26,7 @@ class PickleStore:
 
     def get(self, key: str) -> Optional[MediaListGroup]:
         data_dict = self.db.get(key)
-        if data_dict is dict:
+        if isinstance(data_dict, dict):
             return from_dict(data_class=MediaListGroup, data=data_dict)
         else:
             print(data_dict)

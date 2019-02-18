@@ -1,4 +1,3 @@
-from .database import PickleStore
-from .model import AppState
+from .database import PickleStore as AppStore
+from .model import AppState, AppStateWrapper
 
-APP_DATABASE = 'app.db'

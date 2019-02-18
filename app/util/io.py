@@ -54,7 +54,18 @@ class StorageUtil:
             writer.write(contents)
 
     @staticmethod
-    def create_file(directory_path, filename, contents) -> str:
+    def write_file_in_app(directory_path: str, filename: str, contents: Any, write_mode='w+') -> None:
+        creation_path = os.path.join(StorageUtil.__get_base_dir(), directory_path)
+        if not os.path.exists(creation_path):
+            path = Path(creation_path)
+            path.mkdir(parents=True, exist_ok=True)
+        with open(os.path.join(creation_path, filename), write_mode) as writer:
+            for chunk in contents.iter_content(chunk_size=512):
+                if chunk:
+                    writer.write(chunk)
+
+    @staticmethod
+    def create_file(directory_path: str, filename: str, contents: Any) -> str:
         if not os.path.exists(directory_path):
             path = Path(directory_path)
             path.mkdir(parents=True, exist_ok=True)

@@ -1,8 +1,10 @@
 import logging
 from typing import Optional
+
+from graphql.language.ast import Document
+
 from gql import Client, gql
 from gql.transport.requests import RequestsHTTPTransport
-from graphql.language.ast import Document
 
 from app import StorageUtil, EventLogHelper
 from ..data import PickleStore

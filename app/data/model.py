@@ -1,18 +1,16 @@
 from dataclasses import dataclass
+from typing import List
 
 
 @dataclass()
 class AppState:
     is_queued: bool
     name: str
-    size: int
+    size: str
     url: str
 
 
 @dataclass()
-class AppConfig:
-    torrent_monitor_directory: str
-    torrent_download_directory: str
-    torrent_preferred_group: str
-    torrent_queued_postfix: str
-    torrent_file_move_after_download: bool
+class AppStateWrapper:
+    data: List[AppState]
+    last_execution_time: int

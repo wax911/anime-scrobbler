@@ -1,1 +1,1 @@
-from .model import TorrentInfo, TorrentWrapper
+from .model import TorrentInfo, TorrentWrapper, TorrentNameInfo, AppConfig

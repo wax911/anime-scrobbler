@@ -1,10 +1,12 @@
 import pickledb
-from typing import Optional
+from typing import Optional, Union
 from dacite import from_dict
 
 from app import EventLogHelper, StorageUtil
 from .model import AppState
-from . import APP_DATABASE
+
+
+APP_DATABASE = 'database/state.db'
 
 
 class PickleStore:
@@ -14,7 +16,7 @@ class PickleStore:
         src = StorageUtil.create_base_path(APP_DATABASE)
         self.db = pickledb.load(location=src, auto_dump=True)
 
-    def save(self, key: str, value: dict):
+    def save(self, key: str, value: Union[dict, str]):
         result = self.db.set(key, value)
         if result:
             EventLogHelper.log_info(f"Saved dictionary: \n"

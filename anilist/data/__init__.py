@@ -1,10 +1,2 @@
 from .database import PickleStore
-from .model import MediaListGroup, MediaTitle
-
-LIST_KEY_CURRENT = "CURRENT"
-LIST_KEY_PLANNING = "PLANNING"
-LIST_KEY_COMPLETED = "COMPLETED"
-LIST_KEY_PAUSED = "PAUSED"
-LIST_KEY_REPEATING = "REPEATING"
-
-ANILIST_DATABASE = 'anilist.db'
+from .model import MediaListGroup, MediaTitle, MediaEntry, AiringSchedule

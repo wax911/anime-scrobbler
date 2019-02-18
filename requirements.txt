@@ -4,3 +4,4 @@ pickledb
 plexapi
 gql
 dacite
+anitopy
