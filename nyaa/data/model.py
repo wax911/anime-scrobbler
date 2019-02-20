@@ -14,7 +14,7 @@ class AppConfig:
 
 
 @dataclass()
-class TorrentNameInfo:
+class TorrentAnimeInfo:
     file_name: Optional[str]
     file_extension: Optional[str]
     video_resolution: Optional[str]
@@ -52,9 +52,9 @@ class TorrentInfo:
     seeders: str
     leechers: str
     hash: Optional[str]
-    anime_info: Optional[TorrentNameInfo]
+    anime_info: Optional[TorrentAnimeInfo]
 
-    def add_anime_info(self, torrent_name_info: TorrentNameInfo) -> None:
+    def add_anime_info(self, torrent_name_info: TorrentAnimeInfo) -> None:
         """
         Added anime info for the the current torrent
         :param torrent_name_info:

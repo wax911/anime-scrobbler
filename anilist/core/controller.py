@@ -1,3 +1,4 @@
+import inspect
 import logging
 from typing import Optional
 
@@ -37,5 +38,7 @@ class AniListController:
             for entry in media_lists:
                 pickle_store.save(entry["status"], entry)
         except Exception as e:
-            EventLogHelper.log_error(f"__handle_response(response: Optional[dict]):\n"
-                                     f"Exception -> {e}", logging.CRITICAL)
+            EventLogHelper.log_error(f"Error handling response -> {e}",
+                                     __name__,
+                                     inspect.currentframe().f_code.co_name,
+                                     logging.CRITICAL)

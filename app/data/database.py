@@ -1,3 +1,6 @@
+import inspect
+import logging
+
 import pickledb
 from typing import Optional, Union
 from dacite import from_dict
@@ -18,11 +21,11 @@ class PickleStore:
 
     def save(self, key: str, value: Union[dict, str]):
         result = self.db.set(key, value)
-        if result:
-            EventLogHelper.log_info(f"Saved dictionary: \n"
-                                    f"Key -> {key}")
-        else:
-            EventLogHelper.log_info(f"saved dictionary successfully")
+        if not result:
+            EventLogHelper.log_error(f"Error saving {key} to {APP_DATABASE}",
+                                     __name__,
+                                     inspect.currentframe().f_code.co_name,
+                                     logging.CRITICAL)
 
     def get(self, key: str) -> Optional[AppState]:
         data_dict = self.db.get(key)
