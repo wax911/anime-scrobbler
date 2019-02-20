@@ -18,10 +18,26 @@ class NyaaControllerHelper:
     """
 
     @staticmethod
-    def _parse_torrent_anime_info(torrent_info: TorrentInfo) -> None:
+    def _parse_torrent_anime_info(torrent_info: TorrentInfo) -> bool:
+        """
+        Parse the torrent info name to extract additional information, return true if successful
+        otherwise false if the release is a Batch
+        :param torrent_info:
+        :return:
+        """
         parsed_file_name = anitopy.parse(torrent_info.name)
-        torrent_name_info = from_dict(TorrentAnimeInfo, parsed_file_name)
-        torrent_info.add_anime_info(torrent_name_info)
+        if parsed_file_name.__contains__('release_information') and parsed_file_name['release_information'] == 'Batch':
+            print()
+            EventLogHelper.log_info(f"Skipping anime for torrent : {torrent_info.name}\n"
+                                    f"details -> {parsed_file_name}",
+                                    __name__,
+                                    inspect.currentframe().f_code.co_name)
+            print('<------------------------------------------------------------>')
+            return False
+        else:
+            torrent_name_info = from_dict(TorrentAnimeInfo, parsed_file_name)
+            torrent_info.add_anime_info(torrent_name_info)
+            return True
 
     @staticmethod
     def _build_search_term(media_entry: MediaEntry, config: AppConfig) -> str:
@@ -77,7 +93,8 @@ class NyaaControllerHelper:
         torrent_matches: List[Optional[TorrentInfo]] = list()
 
         for search_result in search_results:
-            self._parse_torrent_anime_info(search_result)
+            if not self._parse_torrent_anime_info(search_result):
+                continue
             """temporary variable so we don't have to go down the hierarchy structure every time"""
             anime_info = search_result.anime_info
             if media_entry.has_user_watched_episode(anime_info.episode_number):
@@ -85,8 +102,8 @@ class NyaaControllerHelper:
                 if has_seasonal_info and season_item is not None:
                     if anime_info.has_season_information() and anime_info.season_number == season_item.seasonNumber:
                         self.__add_to_download_queue(media_entry, torrent_matches, anime_info, search_result)
-                    else:
-                        self.__add_to_download_queue(media_entry, torrent_matches, anime_info, search_result)
+                else:
+                    self.__add_to_download_queue(media_entry, torrent_matches, anime_info, search_result)
             else:
                 print()
                 EventLogHelper.log_info(f"Skipping anime for torrent : {search_result.name}\n"

@@ -79,7 +79,7 @@ class MediaEntry:
         Checks if the user has watched the given episode
         :return: true if the user has watched it, otherwise false
         """
-        return self.progress < int(episode_number)
+        return self.progress < int(episode_number) or int(episode_number) < 1
 
     def can_add_to_queue(self, episode_number: str) -> bool:
         """
