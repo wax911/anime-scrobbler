@@ -2,35 +2,35 @@ import inspect
 import logging
 
 import pickledb
-from typing import Optional
+from typing import Optional, Union
 from dacite import from_dict
 
 from app import EventLogHelper, StorageUtil
-from .model import MediaListGroup
+from .model import AppState
 
 
-ANILIST_DATABASE = 'database/anilist.db'
+APP_DATABASE = 'database/state.db'
 
 
 class PickleStore:
 
     def __init__(self) -> None:
         super().__init__()
-        src = StorageUtil.create_base_path(ANILIST_DATABASE)
+        src = StorageUtil.create_base_path(APP_DATABASE)
         self.db = pickledb.load(location=src, auto_dump=True)
 
-    def save(self, key: str, value: dict):
+    def save(self, key: str, value: Union[dict, str]):
         result = self.db.set(key, value)
         if not result:
-            EventLogHelper.log_error(f"Error saving {key} to {ANILIST_DATABASE}",
+            EventLogHelper.log_error(f"Error saving {key} to {APP_DATABASE}",
                                      __name__,
                                      inspect.currentframe().f_code.co_name,
                                      logging.CRITICAL)
 
-    def get(self, key: str) -> Optional[MediaListGroup]:
+    def get(self, key: str) -> Optional[AppState]:
         data_dict = self.db.get(key)
-        if isinstance(data_dict, dict):
-            return from_dict(data_class=MediaListGroup, data=data_dict)
+        if data_dict is dict:
+            return from_dict(data_class=AppState, data=data_dict)
         else:
             print(data_dict)
         return None
