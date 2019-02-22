@@ -1,1 +1,1 @@
-from .model import TorrentInfo, TorrentWrapper, TorrentAnimeInfo, AppConfig
+from .model import TorrentInfo, TorrentAnimeInfo, NyaaModelHelper, AppConfig
