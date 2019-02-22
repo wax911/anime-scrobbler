@@ -32,22 +32,51 @@ Nyaa.search(keyword="Shoukoku no Altair", category=1)
 }
 ```
 
-### [Pickle DB](https://github.com/patx/pickledb)
+### [TinyDB](https://github.com/msiemens/tinydb)
 
-> pickleDB is lightweight, fast, and simple database based on the
-[json](https://docs.python.org/3/library/json.html) module.
-And it's BSD licensed!
+> TinyDB is a lightweight document oriented database optimized for your happiness :) 
+It's written in pure Python and has no external dependencies. The target are small apps 
+that would be blown away by a SQL-DB or an external database server.
+
+#### Example Code
 
 ```python
-import pickledb
+from tinydb import TinyDB
+db = TinyDB('/path/to/db.json')
+db.insert({'int': 1, 'char': 'a'})
+db.insert({'int': 1, 'char': 'b'})
+```
 
-db = pickledb.load('test.db', False)
+__Query Language__
 
-db.set('key', 'value')
+```python
+from tinydb import TinyDB, Query
 
-db.get('key')
+User = Query()
+db = TinyDB('/path/to/db.json')
+# Search for a field value
+db.search(User.name == 'John')
+[{'name': 'John', 'age': 22}, {'name': 'John', 'age': 37}]
 
-db.dump()
+# Combine two queries with logical and
+db.search((User.name == 'John') & (User.age <= 30))
+[{'name': 'John', 'age': 22}]
+
+# Combine two queries with logical or
+db.search((User.name == 'John') | (User.name == 'Bob'))
+[{'name': 'John', 'age': 22}, {'name': 'John', 'age': 37}, {'name': 'Bob', 'age': 42}]
+
+# More possible comparisons:  !=  <  >  <=  >=
+# More possible checks: where(...).matches(regex), where(...).test(your_test_func)
+```
+
+__Tables__
+
+```python
+table = db.table('name')
+table.insert({'value': True})
+table.all()
+[{'value': True}]
 ```
 
 ### [Plex API](https://github.com/pkkid/python-plexapi)
