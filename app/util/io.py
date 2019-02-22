@@ -82,7 +82,7 @@ class EventLogHelper:
 
     @staticmethod
     def __get_current_date_time() -> Any:
-        return datetime.now().strftime("%d_%b_%y")
+        return datetime.now().strftime("%d_%b_%Y")
 
     @staticmethod
     def __get_log_file(postfix: str) -> str:
@@ -92,7 +92,7 @@ class EventLogHelper:
         return StorageUtil.create_file(directory_path, file_name, '')
 
     @staticmethod
-    def log_info(message: Any, module_name: str, function_name: str = inspect.currentframe().f_code.co_name):
+    def log_info(message: Any, module_name: str, function_name: str):
         logging.basicConfig(filename=EventLogHelper.__get_log_file("INFO"),
                             format=EventLogHelper.LOG_FORMAT,
                             datefmt=EventLogHelper.TIME_FORMAT,
@@ -104,7 +104,7 @@ class EventLogHelper:
         print(f"{message}")
 
     @staticmethod
-    def log_warning(message: Any, module_name: str, function_name: str = inspect.currentframe().f_code.co_name):
+    def log_warning(message: Any, module_name: str, function_name: str):
         logging.basicConfig(filename=EventLogHelper.__get_log_file("WARNING"),
                             format=EventLogHelper.LOG_FORMAT,
                             datefmt=EventLogHelper.TIME_FORMAT,
@@ -116,8 +116,7 @@ class EventLogHelper:
         print(f"{message}")
 
     @staticmethod
-    def log_error(message: Any, module_name: str, function_name: str = inspect.currentframe().f_code.co_name,
-                  log_level=logging.ERROR, ):
+    def log_error(message: Any, module_name: str, function_name: str, log_level=logging.ERROR):
         logging.basicConfig(filename=EventLogHelper.__get_log_file("ERROR"),
                             format=EventLogHelper.LOG_FORMAT,
                             datefmt=EventLogHelper.TIME_FORMAT,

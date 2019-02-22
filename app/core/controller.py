@@ -1,14 +1,16 @@
 import inspect
 import json
+
+from typing import Optional, List, Tuple
+from dacite import from_dict
+from tinydb import where
+
 from anilist import AniListController, MediaTitle, MediaEntry, AniListStore
 from app import EventLogHelper
-from nyaa import NyaaController, TorrentInfo, AppConfig
+from nyaa import NyaaController, TorrentInfo, AppConfig, NyaaModelHelper
 from plex import PlexController, Show, Episode
-from typing import Optional, List, Tuple
-from ..data import AppState, AppStore
+from ..data import AppStore
 from ..util import StorageUtil
-
-from dacite import from_dict
 
 
 class AppController:
@@ -16,15 +18,19 @@ class AppController:
     def __init__(self, list_name: str) -> None:
         super().__init__()
         self.list_name = list_name
+        self.anilist_search_query = (where('status') == list_name)
         self.anilist_controller: AniListController = AniListController()
         self.plex_controller: PlexController = PlexController()
         self.nyaa_controller: NyaaController = NyaaController()
         self.app_store: AppStore = AppStore()
-        json_string = json.loads(StorageUtil.read_file('config', 'app.json'))
-        self.app_config: AppConfig = from_dict(AppConfig, json_string)
+        self.app_config = self.__get_app_configuration()
 
     @staticmethod
-    def __search_for_anime_by_title(show_title: str, media_entries: List[MediaEntry]) -> MediaEntry:
+    def __get_app_configuration() -> AppConfig:
+        json_string = json.loads(StorageUtil.read_file('config', 'app.json'))
+        return from_dict(AppConfig, json_string)
+
+    def __search_for_anime_by_title(self, show_title: str, media_entries: List[MediaEntry]) -> MediaEntry:
         """
         Find anilist shows matching the show title in plex
         :param show_title:
@@ -35,19 +41,20 @@ class AppController:
             media_title: MediaTitle = media_entry.media.title
             if media_title.romaji == show_title or media_title.english == show_title:
                 EventLogHelper.log_info(f"Search match found -> {show_title}",
-                                        __name__,
+                                        self.__class__.__name__,
                                         inspect.currentframe().f_code.co_name)
                 return media_entry
 
-    def fetch_anime_list(self) -> Optional[List[MediaEntry]]:
+    def fetch_anime_list(self) -> List[Optional[MediaEntry]]:
         """
         Fetches a media group of anime by the passed list name
         :return: list of anime of the group
         """
+        anilist_store: AniListStore = AniListStore()
         if self.list_name is not None:
-            self.anilist_controller.make_request()
-        media_list_group = AniListStore().get(self.list_name)
-        return media_list_group.entries
+            self.anilist_controller.make_request(anilist_store)
+        media_list_entries = anilist_store.search(self.anilist_search_query)
+        return media_list_entries
 
     def find_plex_show(self, media_entries: List[MediaEntry]) -> List[Optional[Show]]:
         """
@@ -61,7 +68,7 @@ class AppController:
                 show = self.plex_controller.find_all_by_title(entry.media.title)
                 download_list += show
         EventLogHelper.log_info(f"Fetched list of shows by title, returned {download_list.__len__()} results",
-                                __name__,
+                                self.__class__.__name__,
                                 inspect.currentframe().f_code.co_name)
         return download_list
 
@@ -99,7 +106,7 @@ class AppController:
         show_list, media_list = show_media_tuple
         for show, media in zip(show_list, media_list):
             EventLogHelper.log_info(f"Searching nyaa.si for -> {show.title} or {media.media.title.userPreferred}",
-                                    __name__,
+                                    self.__class__.__name__,
                                     inspect.currentframe().f_code.co_name)
             torrent_search_results: List[Optional[TorrentInfo]] = \
                 self.nyaa_controller.search_for_show(show, media, self.app_config)
@@ -113,31 +120,39 @@ class AppController:
         :param search_results: list of pending items to download
         :return:
         """
+        queued_downloads: List[Optional[TorrentInfo]] = list()
         if search_results.__len__() > 0:
             for torrent_info in search_results:
                 EventLogHelper.log_info(f"Downloading torrent for file -> {torrent_info.name}",
-                                        __name__,
+                                        self.__class__.__name__,
                                         inspect.currentframe().f_code.co_name)
                 is_download_successful = self.nyaa_controller.download_torrent_file(torrent_info, self.app_config)
                 if is_download_successful:
-                    app_state = {
-                        "name": torrent_info.anime_info.anime_title,
-                        "size": torrent_info.size,
-                        "is_queued": True,
-                        "url": torrent_info.download_url
-                    }
-                    self.app_store.save(app_state["name"], app_state)
+                    queued_downloads.append(torrent_info)
                     EventLogHelper.log_info(f"Download successful, anime attributes -> {torrent_info.anime_info}",
-                                            __name__,
+                                            self.__class__.__name__,
                                             inspect.currentframe().f_code.co_name)
                 else:
                     EventLogHelper.log_info(f"Failed to download, anime attributes -> {torrent_info.anime_info}",
-                                            __name__,
+                                            self.__class__.__name__,
                                             inspect.currentframe().f_code.co_name)
         else:
             EventLogHelper.log_info(f"No new episodes to download, ending execution of script",
-                                    __name__,
+                                    self.__class__.__name__,
                                     inspect.currentframe().f_code.co_name)
+        if queued_downloads.__len__() > 0:
+            model_helper = NyaaModelHelper()
+            for item in queued_downloads:
+                model = model_helper.create_dictionary_class(item)
+                self.app_store.save_or_update(model)
+
+    def queue_downloaded_torrent_files(self):
+        """
+        Copies/moves the torrent files to the desired destination directory specified in the configuration file,
+        and uses file watcher to check if the queued extension has been applied to the files before.
+        :return:
+        """
+        pass
 
     def start_application(self) -> None:
         """
@@ -147,10 +162,10 @@ class AppController:
         try:
             anime_list: List[Optional[MediaEntry]] = self.fetch_anime_list()
             print('-------------------------------------------------------')
-            if anime_list.__len__() > 0 or anime_list is not None:
+            if anime_list:
                 shows: List[Optional[Show]] = self.find_plex_show(anime_list)
                 print('-------------------------------------------------------')
-                if shows.__len__() > 0 or shows is not None:
+                if shows:
                     missing_shows: Tuple[List[Optional[Show]], List[Optional[MediaEntry]]] \
                         = self.find_missing_show_entries(shows, anime_list)
                     print('-------------------------------------------------------')
@@ -159,5 +174,5 @@ class AppController:
                     print('-------------------------------------------------------')
         except Exception as e:
             EventLogHelper.log_error(f"Uncaught exception thrown -> {e}",
-                                     __name__,
+                                     self.__class__.__name__,
                                      inspect.currentframe().f_code.co_name)
