@@ -1,8 +1,11 @@
+import inspect
 import logging
 from typing import Optional
+
+from graphql.language.ast import Document
+
 from gql import Client, gql
 from gql.transport.requests import RequestsHTTPTransport
-from graphql.language.ast import Document
 
 from app import StorageUtil, EventLogHelper
 from ..data import PickleStore
@@ -23,16 +26,7 @@ class AniListController:
 
     def make_request(self):
         request = self.__create_request()
-        params = '''
-        {
-            "userId": 80546,
-            "userName": "wax911",
-            "type": "ANIME",
-            "statusIn": ["CURRENT","PLANNING","COMPLETED","PAUSED","DROPPED","REPEATING"],
-            "forceSingleCompletedList": true,
-            "sort": "MEDIA_ID"
-        }
-        '''
+        params = StorageUtil.read_file('config', 'anilist.json')
         response = self.client.execute(request, variable_values=params)
         self.__handle_response(response)
 
@@ -44,5 +38,7 @@ class AniListController:
             for entry in media_lists:
                 pickle_store.save(entry["status"], entry)
         except Exception as e:
-            EventLogHelper.log_error(f"__handle_response(response: Optional[dict]):\n"
-                                     f"Exception -> {e}", logging.CRITICAL)
+            EventLogHelper.log_error(f"Error handling response -> {e}",
+                                     __name__,
+                                     inspect.currentframe().f_code.co_name,
+                                     logging.CRITICAL)

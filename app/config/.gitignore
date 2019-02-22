@@ -1,0 +1,2 @@
+# Excluding user configuration files
+*.json
