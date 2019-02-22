@@ -1,1 +1,1 @@
-from .model import NyaaResult
+from .model import TorrentInfo, TorrentWrapper, TorrentAnimeInfo, AppConfig
