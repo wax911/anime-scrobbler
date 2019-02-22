@@ -1,7 +1,7 @@
 requests
 nyaapy
-pickledb
 plexapi
 gql
 dacite
 anitopy
+tinydb
