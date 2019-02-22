@@ -1,5 +1,10 @@
+import inspect
 from dataclasses import dataclass
-from typing import Optional, List
+from typing import Optional, List, Dict
+
+from dacite import from_dict
+
+from app import EventLogHelper
 
 
 @dataclass()
@@ -9,12 +14,23 @@ class AiringSchedule:
     timeUntilAiring: int
     episode: int
 
+    def __iter__(self):
+        yield 'id', self.id
+        yield 'airingAt', self.airingAt
+        yield 'timeUntilAiring', self.timeUntilAiring
+        yield 'episode', self.episode
+
 
 @dataclass()
 class FuzzyDate:
     year: Optional[int]
     month: Optional[int]
     day: Optional[int]
+
+    def __iter__(self):
+        yield 'year', self.year
+        yield 'month', self.month
+        yield 'day', self.day
 
 
 @dataclass()
@@ -24,11 +40,21 @@ class MediaTitle:
     native: Optional[str]
     userPreferred: Optional[str]
 
+    def __iter__(self):
+        yield 'english', self.english
+        yield 'romaji', self.romaji
+        yield 'native', self.native
+        yield 'userPreferred', self.userPreferred
+
 
 @dataclass()
 class MediaCoverImage:
     large: str
     medium: str
+
+    def __iter__(self):
+        yield 'large', self.large
+        yield 'medium', self.medium
 
 
 @dataclass()
@@ -48,6 +74,23 @@ class Media:
     isAdult: bool
     isFavourite: bool
     nextAiringEpisode: Optional[AiringSchedule]
+
+    def __iter__(self):
+        yield 'id', self.id
+        yield 'title', self.title
+        yield 'coverImage', self.coverImage
+        yield 'type', self.type
+        yield 'format', self.format
+        yield 'season', self.season
+        yield 'status', self.status
+        yield 'meanScore', self.meanScore
+        yield 'averageScore', self.averageScore
+        yield 'startDate', self.startDate
+        yield 'endDate', self.endDate
+        yield 'episodes', self.episodes
+        yield 'isAdult', self.isAdult
+        yield 'isFavourite', self.isFavourite
+        yield 'nextAiringEpisode', self.nextAiringEpisode
 
 
 @dataclass
@@ -88,11 +131,51 @@ class MediaEntry:
         """
         return int(episode_number) <= self.get_episode_backlog()
 
+    def __iter__(self):
+        yield 'id', self.id
+        yield 'mediaId', self.mediaId
+        yield 'status', self.status
+        yield 'score', self.score
+        yield 'progress', self.progress
+        yield 'priority', self.priority
+        yield 'private', self.private
+        yield 'hiddenFromStatusLists', self.hiddenFromStatusLists
+        yield 'media', self.media
 
-@dataclass
-class MediaListGroup:
-    entries: List[MediaEntry]
-    name: str
-    isCustomList: bool
-    isSplitCompletedList: bool
-    status: str
+
+# @dataclass
+# class MediaListGroup:
+#     entries: List[MediaEntry]
+#     name: str
+#     isCustomList: bool
+#     isSplitCompletedList: bool
+#     status: str
+
+
+class AniListModelHelper:
+
+    def create_data_class(self, response: Optional[Dict]) -> Optional[MediaEntry]:
+        parsed_object: Optional[List[MediaEntry]] = None
+        try:
+            parsed_object = from_dict(MediaEntry, response)
+        except Exception as e:
+            print()
+            EventLogHelper.log_info(f"Error converting dictionary to data class\n"
+                                    f"details -> {e}",
+                                    self.__class__.__name__,
+                                    inspect.currentframe().f_code.co_name)
+            print('<------------------------------------------------------------>')
+        return parsed_object
+
+    def create_dictionary_class(self, response: MediaEntry) -> Optional[Dict]:
+        parsed_dictionary: Optional[Dict] = None
+        try:
+            parsed_dictionary = dict(response)
+        except Exception as e:
+            print()
+            EventLogHelper.log_info(f"Error converting data class to dictionary\n"
+                                    f"details -> {e}",
+                                    self.__class__.__name__,
+                                    inspect.currentframe().f_code.co_name)
+            print('<------------------------------------------------------------>')
+        return parsed_dictionary
