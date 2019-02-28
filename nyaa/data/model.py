@@ -79,19 +79,30 @@ class TorrentInfo:
         Added anime info for the the current torrent
         :return: true if successful otherwise false if the release is a Batch
         """
-        parsed_file_name = anitopy.parse(self.name)
-        if parsed_file_name.__contains__('release_information') and parsed_file_name['release_information'] == 'Batch':
+        try:
+            parsed_file_name = anitopy.parse(self.name)
+            if not isinstance(parsed_file_name['episode_number'], str) \
+                    or parsed_file_name.__contains__('release_information') \
+                    and parsed_file_name['release_information'] == 'Batch':
+                print()
+                EventLogHelper.log_info(f"Skipping anime for torrent : {self.name}\n"
+                                        f"details -> {parsed_file_name}",
+                                        self.__class__.__name__,
+                                        inspect.currentframe().f_code.co_name)
+                print('<------------------------------------------------------------>')
+                return False
+            else:
+                torrent_name_info = from_dict(TorrentAnimeInfo, parsed_file_name)
+                self.anime_info = torrent_name_info
+                return True
+        except Exception as e:
             print()
-            EventLogHelper.log_info(f"Skipping anime for torrent : {self.name}\n"
-                                    f"details -> {parsed_file_name}",
+            EventLogHelper.log_info(f"Error converting dictionary to data class\n"
+                                    f"details -> {e}",
                                     self.__class__.__name__,
                                     inspect.currentframe().f_code.co_name)
             print('<------------------------------------------------------------>')
             return False
-        else:
-            torrent_name_info = from_dict(TorrentAnimeInfo, parsed_file_name)
-            self.anime_info = torrent_name_info
-            return True
 
     def __iter__(self):
         yield 'id', self.id
