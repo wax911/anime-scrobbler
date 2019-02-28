@@ -1,7 +1,7 @@
 import inspect
 from dataclasses import dataclass
 from re import match, IGNORECASE
-from typing import Optional, Dict
+from typing import Optional, Dict, Union
 
 from anitopy import anitopy
 from dacite import from_dict
@@ -17,6 +17,10 @@ class AppConfig:
     torrent_preferred_group: str
     torrent_queued_postfix: str
     torrent_keep_file_after_queuing: bool
+
+    def build_parent_save_path(self, child_directory: str) -> Union[bytes, str]:
+        import os
+        return os.path.join(self.torrent_download_directory, child_directory)
 
 
 @dataclass()
@@ -75,19 +79,30 @@ class TorrentInfo:
         Added anime info for the the current torrent
         :return: true if successful otherwise false if the release is a Batch
         """
-        parsed_file_name = anitopy.parse(self.name)
-        if parsed_file_name.__contains__('release_information') and parsed_file_name['release_information'] == 'Batch':
+        try:
+            parsed_file_name = anitopy.parse(self.name)
+            if not isinstance(parsed_file_name['episode_number'], str) \
+                    or parsed_file_name.__contains__('release_information') \
+                    and parsed_file_name['release_information'] == 'Batch':
+                print()
+                EventLogHelper.log_info(f"Skipping anime for torrent : {self.name}\n"
+                                        f"details -> {parsed_file_name}",
+                                        self.__class__.__name__,
+                                        inspect.currentframe().f_code.co_name)
+                print('<------------------------------------------------------------>')
+                return False
+            else:
+                torrent_name_info = from_dict(TorrentAnimeInfo, parsed_file_name)
+                self.anime_info = torrent_name_info
+                return True
+        except Exception as e:
             print()
-            EventLogHelper.log_info(f"Skipping anime for torrent : {self.name}\n"
-                                    f"details -> {parsed_file_name}",
+            EventLogHelper.log_info(f"Error converting dictionary to data class\n"
+                                    f"details -> {e}",
                                     self.__class__.__name__,
                                     inspect.currentframe().f_code.co_name)
             print('<------------------------------------------------------------>')
             return False
-        else:
-            torrent_name_info = from_dict(TorrentAnimeInfo, parsed_file_name)
-            self.anime_info = torrent_name_info
-            return True
 
     def __iter__(self):
         yield 'id', self.id
@@ -103,7 +118,7 @@ class TorrentInfo:
         yield 'seeders', self.seeders
         yield 'leechers', self.leechers
         yield 'hash', self.hash
-        yield 'anime_info', self.anime_info
+        yield 'anime_info', dict(self.anime_info)
         yield 'is_queued', self.is_queued
 
 

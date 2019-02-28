@@ -1,5 +1,5 @@
 import inspect
-from typing import Optional, List, Tuple
+from typing import Optional, List, Tuple, Dict
 
 from NyaaPy import Nyaa
 from requests import get, Response
@@ -18,20 +18,20 @@ class NyaaControllerHelper:
     def __init__(self) -> None:
         super().__init__()
         self.model_helper = NyaaModelHelper()
+        self.config: Optional[AppConfig] = None
 
-    def _build_search_term(self, media_entry: MediaEntry, config: AppConfig) -> str:
+    def _build_search_term(self, media_entry: MediaEntry) -> str:
         """
         Builds a search term which will match the kind of release group and quality we're looking for,
         see the app.json file for more details regarding configuration
         :param media_entry:
-        :param config:
         :return:
         """
         media_title: MediaTitle = media_entry.media.title
         search_title: str = media_title.romaji
         if search_title is None:
             search_title = media_title.english
-        search_term: str = f"{config.torrent_preferred_group} {search_title} {config.torrent_preferred_quality}"
+        search_term: str = f"{self.config.torrent_preferred_group} {search_title} {self.config.torrent_preferred_quality}"
         EventLogHelper.log_info(f"Building search term to use in nyaa.si -> {search_term}",
                                 self.__class__.__name__,
                                 inspect.currentframe().f_code.co_name)
@@ -75,6 +75,15 @@ class NyaaControllerHelper:
                 continue
             """temporary variable so we don't have to go down the hierarchy structure every time"""
             anime_info = search_result.anime_info
+            if f"[{anime_info.release_group}]" != self.config.torrent_preferred_group:
+                print()
+                EventLogHelper.log_info(f"Skipping anime torrent : {anime_info.file_name}\n"
+                                        f"Release group not matching: {anime_info.release_group}",
+                                        self.__class__.__name__,
+                                        inspect.currentframe().f_code.co_name)
+                print('<------------------------------------------------------------>')
+                continue
+
             if media_entry.has_user_watched_episode(anime_info.episode_number):
                 has_seasonal_info, season_item = self.__has_seasonal_information(show, anime_info)
                 if has_seasonal_info and season_item is not None:
@@ -106,8 +115,20 @@ class NyaaController(NyaaControllerHelper):
         :param config: configuration file from app.json parsed as a data class
         :return: list of optional torrent info data classes
         """
-        search_term = self._build_search_term(media_entry, config)
-        search_results = Nyaa.search(keyword=search_term, category='1')
+        has_more_results = True
+        search_page: int = 1
+        self.config = config
+        search_term = self._build_search_term(media_entry)
+        search_results: List[Dict[Optional[str], Optional[str]]] = list()
+
+        while has_more_results:
+            temp_search_results = Nyaa.search(keyword=search_term, category='1', page=search_page)
+            if temp_search_results is not None and temp_search_results.__len__() > 0:
+                search_results += temp_search_results
+                search_page += 1
+            else:
+                has_more_results = False
+
         torrent_info_results: List[Optional[TorrentInfo]] = list()
         for search_result in search_results:
             torrent_info = self.model_helper.create_data_class(search_result)
@@ -137,6 +158,6 @@ class NyaaController(NyaaControllerHelper):
         """
         torrent_file_name = f"{torrent_info.anime_info.file_name}.torrent"
         response: Response = get(torrent_info.download_url, stream=True)
-        StorageUtil.write_file_in_app(directory_path=config.torrent_download_directory,
+        StorageUtil.write_file_in_app(directory_path=config.build_parent_save_path(torrent_info.anime_info.anime_title),
                                       filename=torrent_file_name, contents=response, write_mode='wb')
         return True
