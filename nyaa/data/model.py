@@ -1,7 +1,7 @@
 import inspect
 from dataclasses import dataclass
 from re import match, IGNORECASE
-from typing import Optional, Dict
+from typing import Optional, Dict, Union
 
 from anitopy import anitopy
 from dacite import from_dict
@@ -17,6 +17,10 @@ class AppConfig:
     torrent_preferred_group: str
     torrent_queued_postfix: str
     torrent_keep_file_after_queuing: bool
+
+    def build_parent_save_path(self, child_directory: str) -> Union[bytes, str]:
+        import os
+        return os.path.join(self.torrent_download_directory, child_directory)
 
 
 @dataclass()
