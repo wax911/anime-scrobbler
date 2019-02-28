@@ -107,7 +107,7 @@ class TorrentInfo:
         yield 'seeders', self.seeders
         yield 'leechers', self.leechers
         yield 'hash', self.hash
-        yield 'anime_info', self.anime_info
+        yield 'anime_info', dict(self.anime_info)
         yield 'is_queued', self.is_queued
 
 
