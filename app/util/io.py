@@ -9,6 +9,8 @@ from typing import Optional, Any
 
 class StorageUtil:
 
+    __file_buffer_size: int = 4096
+
     @staticmethod
     def __get_base_dir():
         current_path = os.path.abspath(os.path.dirname(__file__))
@@ -62,7 +64,7 @@ class StorageUtil:
             path = Path(creation_path)
             path.mkdir(parents=True, exist_ok=True)
         with open(os.path.join(creation_path, filename), write_mode) as writer:
-            for chunk in contents.iter_content(chunk_size=256):
+            for chunk in contents.iter_content(chunk_size=StorageUtil.__file_buffer_size):
                 if chunk:
                     writer.write(chunk)
 
