@@ -6,6 +6,8 @@ from pathlib import Path
 from datetime import datetime
 from typing import Optional, Any
 
+from nyaa import AppConfig
+
 
 class StorageUtil:
 
@@ -76,6 +78,28 @@ class StorageUtil:
         with open(os.path.join(directory_path, filename), "a+") as writer:
             writer.write(contents)
         return os.path.join(directory_path, filename)
+
+    @staticmethod
+    def copy_or_move_file(file_path: str, app_configuration: AppConfig) -> bool:
+        """
+        Copies or moves teh downloaded file as per configuration
+        :param file_path:
+        :param app_configuration:
+        :return:
+        """
+        destination_path = Path(app_configuration.torrent_monitor_directory)
+        source_file_path = Path(app_configuration.torrent_download_directory).joinpath(file_path)
+        if destination_path.exists():
+            destination_file_name = destination_path.joinpath(file_path)
+            os.rename(source_file_path, destination_file_name)
+            if not app_configuration.torrent_keep_file_after_queuing:
+                os.remove(source_file_path)
+        else:
+            EventLogHelper.log_info(f"Destination directory does not exist",
+                                    "copy_or_move_file",
+                                    inspect.currentframe().f_code.co_name)
+            return False
+        return True
 
 
 class EventLogHelper:

@@ -152,6 +152,12 @@ class AppController:
             EventLogHelper.log_info(f"No new episodes to download, ending execution of script",
                                     self.__class__.__name__,
                                     inspect.currentframe().f_code.co_name)
+        if queued_downloads.__len__() > 0:
+            model_helper = NyaaModelHelper()
+            for item in queued_downloads:
+                StorageUtil.copy_or_move_file(item.name, self.app_config)
+                model = model_helper.create_dictionary_class(item)
+                self.app_store.save_or_update(model)
 
     def queue_downloaded_torrent_files(self):
         """
