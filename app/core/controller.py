@@ -120,29 +120,42 @@ class AppController:
         :param search_results: list of pending items to download
         :return:
         """
-        queued_downloads: List[Optional[TorrentInfo]] = list()
+        model_helper = NyaaModelHelper()
         if search_results.__len__() > 0:
             for torrent_info in search_results:
-                EventLogHelper.log_info(f"Downloading torrent for file -> {torrent_info.name}",
-                                        self.__class__.__name__,
-                                        inspect.currentframe().f_code.co_name)
-                is_download_successful = self.nyaa_controller.download_torrent_file(torrent_info, self.app_config)
-                if is_download_successful:
-                    queued_downloads.append(torrent_info)
-                    EventLogHelper.log_info(f"Download successful, anime attributes -> {torrent_info.anime_info}",
+                item_exists = self.app_store.search(where('name') == torrent_info.name)
+                if item_exists is None or item_exists.__len__() < 1:
+                    print()
+                    EventLogHelper.log_info(f"Downloading torrent for file -> {torrent_info.name}",
                                             self.__class__.__name__,
                                             inspect.currentframe().f_code.co_name)
+                    is_download_successful = self.nyaa_controller.download_torrent_file(torrent_info, self.app_config)
+                    if is_download_successful:
+                        model_dictionary = model_helper.create_dictionary_class(torrent_info)
+                        self.app_store.save_or_update(model_dictionary)
+                        print()
+                        EventLogHelper.log_info(f"Download successful, anime attributes -> {torrent_info.anime_info}",
+                                                self.__class__.__name__,
+                                                inspect.currentframe().f_code.co_name)
+                    else:
+                        print()
+                        EventLogHelper.log_info(f"Failed to download, anime attributes -> {torrent_info.anime_info}",
+                                                self.__class__.__name__,
+                                                inspect.currentframe().f_code.co_name)
                 else:
-                    EventLogHelper.log_info(f"Failed to download, anime attributes -> {torrent_info.anime_info}",
+                    print()
+                    EventLogHelper.log_info(f"Skipping existing download -> {torrent_info.anime_info}",
                                             self.__class__.__name__,
                                             inspect.currentframe().f_code.co_name)
         else:
+            print()
             EventLogHelper.log_info(f"No new episodes to download, ending execution of script",
                                     self.__class__.__name__,
                                     inspect.currentframe().f_code.co_name)
         if queued_downloads.__len__() > 0:
             model_helper = NyaaModelHelper()
             for item in queued_downloads:
+                StorageUtil.copy_or_move_file(item.name, self.app_config)
                 model = model_helper.create_dictionary_class(item)
                 self.app_store.save_or_update(model)
 
