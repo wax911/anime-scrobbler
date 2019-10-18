@@ -1,8 +1,9 @@
 import inspect
 from dataclasses import dataclass
-from typing import Optional, List, Dict
+from typing import Optional, List, Dict, Iterator
 
 from dacite import from_dict
+from plexapi.video import Episode
 
 from app import EventLogHelper
 
@@ -119,10 +120,10 @@ class MediaEntry:
 
     def has_user_watched_episode(self, episode_number: str) -> bool:
         """
-        Checks if the user has watched the given episode
+        Checks if the episode exists in otherwise checks if the user has watched the given episode
         :return: true if the user has watched it, otherwise false
         """
-        return self.progress < int(episode_number) or int(episode_number) < 1
+        return self.progress > int(float(episode_number))
 
     def can_add_to_queue(self, episode_number: str) -> bool:
         """

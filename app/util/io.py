@@ -4,14 +4,13 @@ import json
 import logging
 from pathlib import Path
 from datetime import datetime
-from typing import Optional, Any
+from typing import Optional, Any, Union
 
-from nyaa import AppConfig
+from requests import Response
 
 
 class StorageUtil:
-
-    __file_buffer_size: int = 4096
+    __file_buffer_size: int = 1024
 
     @staticmethod
     def __get_base_dir():
@@ -60,15 +59,26 @@ class StorageUtil:
             writer.write(contents)
 
     @staticmethod
-    def write_file_in_app(directory_path: str, filename: str, contents: Any, write_mode='w+') -> None:
+    def write_file_in_app(directory_path: str, filename: str, contents: Union[Response, Any], write_mode='w+') -> None:
         creation_path = os.path.join(StorageUtil.__get_base_dir(), directory_path)
         if not os.path.exists(creation_path):
             path = Path(creation_path)
             path.mkdir(parents=True, exist_ok=True)
         with open(os.path.join(creation_path, filename), write_mode) as writer:
+            content_size = contents.headers["Content-Length"]
+            EventLogHelper.log_info(
+                f"Downloading file -> {filename} | Size: {content_size}",
+                __name__,
+                inspect.currentframe().f_code.co_name
+            )
             for chunk in contents.iter_content(chunk_size=StorageUtil.__file_buffer_size):
                 if chunk:
-                    writer.write(chunk)
+                    written = writer.write(chunk)
+                    EventLogHelper.log_info(
+                        f"Downloading {written}",
+                        __name__,
+                        inspect.currentframe().f_code.co_name
+                    )
 
     @staticmethod
     def create_file(directory_path: str, filename: str, contents: Any) -> str:
@@ -80,26 +90,33 @@ class StorageUtil:
         return os.path.join(directory_path, filename)
 
     @staticmethod
-    def copy_or_move_file(file_path: str, app_configuration: AppConfig) -> bool:
+    def copy_or_move_file(directory_path: str, filename: str, destination_path: str, keep_file: bool) -> bool:
         """
         Copies or moves teh downloaded file as per configuration
-        :param file_path:
-        :param app_configuration:
+        :param directory_path:
+        :param filename:
+        :param destination_path:
+        :param keep_file:
         :return:
         """
-        destination_path = Path(app_configuration.torrent_monitor_directory)
-        source_file_path = Path(app_configuration.torrent_download_directory).joinpath(file_path)
-        if destination_path.exists():
-            destination_file_name = destination_path.joinpath(file_path)
+        source_file_path = Path(
+            StorageUtil.__get_base_dir(),
+            directory_path
+        ).joinpath(filename)
+
+        creation_path = Path(destination_path)
+
+        if creation_path.exists():
+            destination_file_name = creation_path.joinpath(filename)
             os.rename(source_file_path, destination_file_name)
-            if not app_configuration.torrent_keep_file_after_queuing:
+            if not keep_file:
                 os.remove(source_file_path)
+            return True
         else:
             EventLogHelper.log_info(f"Destination directory does not exist",
                                     "copy_or_move_file",
                                     inspect.currentframe().f_code.co_name)
-            return False
-        return True
+        return False
 
 
 class EventLogHelper:
@@ -118,7 +135,7 @@ class EventLogHelper:
         return StorageUtil.create_file(directory_path, file_name, '')
 
     @staticmethod
-    def log_info(message: Any, module_name: str, function_name: str):
+    def log_info(message: Any, module_name: str, function_name: str, print_to_screen=True):
         logging.basicConfig(filename=EventLogHelper.__get_log_file("INFO"),
                             format=EventLogHelper.LOG_FORMAT,
                             datefmt=EventLogHelper.TIME_FORMAT,
@@ -127,7 +144,8 @@ class EventLogHelper:
         logger = logging.getLogger(__name__)
         logger.info(f"\n---------------------------------------------------------------\n"
                     f"{message}\n", extra=bundle)
-        print(f"{message}")
+        if print_to_screen:
+            print(f"{message}")
 
     @staticmethod
     def log_warning(message: Any, module_name: str, function_name: str):

@@ -1,4 +1,6 @@
 import inspect
+import logging
+from time import sleep
 from typing import Optional, List, Tuple, Dict
 
 from NyaaPy import Nyaa
@@ -17,6 +19,7 @@ class NyaaControllerHelper:
 
     def __init__(self) -> None:
         super().__init__()
+        self.sleep_duration: float = .25
         self.model_helper = NyaaModelHelper()
         self.config: Optional[AppConfig] = None
 
@@ -59,18 +62,16 @@ class NyaaControllerHelper:
                                         self.__class__.__name__,
                                         inspect.currentframe().f_code.co_name)
 
-    def _find_matching_episodes(self, show: Optional[Show], media_entry: MediaEntry,
-                                search_results: Optional[List[TorrentInfo]]) -> List[Optional[TorrentInfo]]:
+    def _find_missing_episodes(self, show: Optional[Show], search_results: Optional[List[TorrentInfo]]) -> \
+            List[Optional[TorrentInfo]]:
         """
-        Search for matching required series episodes that need to be downloaded
-        :param show:
-        :param media_entry:
-        :param search_results: a list of torrent information matching the search query
-        :return: list of optional torrent info data classes
+        Find episodes that might not exist and add then to the download queue
+        :return:
         """
         torrent_matches: List[Optional[TorrentInfo]] = list()
 
         for search_result in search_results:
+            sleep(self.sleep_duration)
             if not search_result.added_anime_info():
                 continue
             """temporary variable so we don't have to go down the hierarchy structure every time"""
@@ -84,7 +85,52 @@ class NyaaControllerHelper:
                 print('<------------------------------------------------------------>')
                 continue
 
-            if media_entry.has_user_watched_episode(anime_info.episode_number):
+            is_episode_present = False
+            for episode in show.episodes():
+                is_episode_present = episode.index == int(float(anime_info.episode_number))
+                if is_episode_present:
+                    break
+
+            if not is_episode_present:
+                print()
+                EventLogHelper.log_info(
+                    f"Adding missing episode : {anime_info.file_name}",
+                    self.__class__.__name__,
+                    inspect.currentframe().f_code.co_name
+                )
+                print('<------------------------------------------------------------>')
+                torrent_matches.append(search_result)
+
+        return torrent_matches
+
+    def _find_matching_episodes(self, show: Optional[Show], media_entry: MediaEntry,
+                                search_results: Optional[List[TorrentInfo]]) -> List[Optional[TorrentInfo]]:
+        """
+        Search for matching required series episodes that need to be downloaded
+        :param show:
+        :param media_entry:
+        :param search_results: a list of torrent information matching the search query
+        :return: list of optional torrent info data classes
+        """
+        missing_episodes = self._find_missing_episodes(show, search_results)
+        torrent_matches: List[Optional[TorrentInfo]] = list(missing_episodes)
+
+        for search_result in search_results:
+            sleep(self.sleep_duration)
+            if not search_result.added_anime_info():
+                continue
+            """temporary variable so we don't have to go down the hierarchy structure every time"""
+            anime_info = search_result.anime_info
+            if f"[{anime_info.release_group}]" != self.config.torrent_preferred_group:
+                print()
+                EventLogHelper.log_info(f"Skipping anime torrent : {anime_info.file_name}\n"
+                                        f"Release group not matching: {anime_info.release_group}",
+                                        self.__class__.__name__,
+                                        inspect.currentframe().f_code.co_name)
+                print('<------------------------------------------------------------>')
+                continue
+
+            if not media_entry.has_user_watched_episode(anime_info.episode_number):
                 has_seasonal_info, season_item = self.__has_seasonal_information(show, anime_info)
                 if has_seasonal_info and season_item is not None:
                     if anime_info.has_season_information() and anime_info.season_number == season_item.seasonNumber:
@@ -111,7 +157,7 @@ class NyaaController(NyaaControllerHelper):
         """
         Search for a torrent or torrents using the configuration for release groups and quality
         :param show: plex show item which has information about episodes & seasons
-        :param media_entry: anilist it user media entry containing media information and user progress, status & score
+        :param media_entry: anilist users media entry containing media information and user progress, status & score
         :param config: configuration file from app.json parsed as a data class
         :return: list of optional torrent info data classes
         """
@@ -122,6 +168,7 @@ class NyaaController(NyaaControllerHelper):
         search_results: List[Dict[Optional[str], Optional[str]]] = list()
 
         while has_more_results:
+            sleep(self.sleep_duration)
             temp_search_results = Nyaa.search(keyword=search_term, category='1', page=search_page)
             if temp_search_results is not None and temp_search_results.__len__() > 0:
                 search_results += temp_search_results
@@ -131,8 +178,10 @@ class NyaaController(NyaaControllerHelper):
 
         torrent_info_results: List[Optional[TorrentInfo]] = list()
         for search_result in search_results:
+            sleep(self.sleep_duration)
             torrent_info = self.model_helper.create_data_class(search_result)
             torrent_info_results.append(torrent_info)
+
         return self._find_matching_episodes(show, media_entry, torrent_info_results)
 
     # noinspection PyTypeChecker,PyCallByClass
@@ -156,8 +205,41 @@ class NyaaController(NyaaControllerHelper):
         :param torrent_info:
         :return: True if the operation was successful otherwise False
         """
-        torrent_file_name = f"{torrent_info.anime_info.file_name}.torrent"
-        response: Response = get(torrent_info.download_url, stream=True)
-        StorageUtil.write_file_in_app(directory_path=config.build_parent_save_path(torrent_info.anime_info.anime_title),
-                                      filename=torrent_file_name, contents=response, write_mode='wb')
+        try:
+            print()
+            torrent_file_name = f"{torrent_info.anime_info.file_name}.torrent"
+            response: Response = get(
+                url=torrent_info.download_url,
+                allow_redirects=True,
+                stream=True,
+                timeout=30.0
+            )
+
+            if response.ok:
+                StorageUtil.write_file_in_app(
+                    directory_path=config.build_parent_save_path(
+                        torrent_info.anime_info.anime_title
+                    ),
+                    filename=torrent_file_name,
+                    contents=response,
+                    write_mode='wb'
+                )
+            else:
+                EventLogHelper.log_info(
+                    f"Requesting torrent for download failed : {response}\n"
+                    f"Retrying in 5 seconds..",
+                    __name__,
+                    inspect.currentframe().f_code.co_name
+                )
+                sleep(5)
+                NyaaController.download_torrent_file(torrent_info, config)
+            print('<------------------------------------------------------------>')
+        except Exception as e:
+            EventLogHelper.log_error(
+                f"Encountered exception while downloading torrent file -> {e}",
+                __name__,
+                inspect.currentframe().f_code.co_name,
+                logging.CRITICAL
+            )
+            return False
         return True
