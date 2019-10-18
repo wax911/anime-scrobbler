@@ -17,7 +17,7 @@ class AppStore:
         super().__init__()
         src = StorageUtil.create_base_path(APP_DATABASE)
         self.model_helper = NyaaModelHelper()
-        self.db: Table = TinyDB(src)
+        self.db: TinyDB = TinyDB(src)
 
     def save_or_update(self, value: Optional[Dict]):
         result_ids: List[Any] = self.db.upsert(value, where('name') == value['name'])
