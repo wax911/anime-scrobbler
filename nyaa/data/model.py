@@ -79,6 +79,7 @@ class TorrentInfo:
         Added anime info for the the current torrent
         :return: true if successful otherwise false if the release is a Batch
         """
+        parsed_file_name = ""
         try:
             parsed_file_name = anitopy.parse(self.name)
             if not isinstance(parsed_file_name['episode_number'], str) \
@@ -98,7 +99,7 @@ class TorrentInfo:
         except Exception as e:
             print()
             EventLogHelper.log_info(f"Error converting dictionary to data class\n"
-                                    f"details -> {e}",
+                                    f"details -> {e} | {parsed_file_name}",
                                     self.__class__.__name__,
                                     inspect.currentframe().f_code.co_name)
             print('<------------------------------------------------------------>')
