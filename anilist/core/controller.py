@@ -37,7 +37,9 @@ class AniListController:
                 for entry in item['entries']:
                     anilist_store.save_or_update(entry)
         except Exception as e:
-            EventLogHelper.log_error(f"Error handling response -> {e}",
-                                     self.__class__.__name__,
-                                     inspect.currentframe().f_code.co_name,
-                                     logging.CRITICAL)
+            EventLogHelper.log_error(
+                f"Error handling response -> {e}",
+                self.__class__.__name__,
+                inspect.currentframe().f_code.co_name,
+                logging.CRITICAL
+            )
