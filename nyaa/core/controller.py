@@ -43,7 +43,7 @@ class NyaaControllerHelper:
             show_seasons: List[Optional[Season]] = show.seasons()
             for season_item in show_seasons:
                 is_finished_watching: bool = season_item.isWatched
-                if show_seasons.__len__() < 2:
+                if len(show_seasons) < 2:
                     is_finished_watching = False
                 """Do some magic here :')"""
                 if not is_finished_watching:
@@ -126,7 +126,7 @@ class NyaaController(NyaaControllerHelper):
             temp_search_results = self.__search_for_matching_until_found(
                 search_page, self._build_search_terms(self.config, media_entry)
             )
-            if temp_search_results is not None and temp_search_results.__len__() > 0:
+            if temp_search_results is not None and len(temp_search_results) > 0:
                 search_results += temp_search_results
                 search_page += 1
             else:
@@ -163,7 +163,7 @@ class NyaaController(NyaaControllerHelper):
             temp_search_results = self.__search_for_matching_until_found(
                 search_page, self._build_search_terms(self.config, media_entry)
             )
-            if temp_search_results is not None and temp_search_results.__len__() > 0:
+            if temp_search_results is not None and len(temp_search_results) > 0:
                 search_results += temp_search_results
                 search_page += 1
             else:

@@ -105,7 +105,7 @@ class AppController:
         )
         for media in download_queue.shows_missing_in_plex:
             torrent_search_results = self.nyaa_controller.search_for_missing_shows(media, self.app_config)
-            if torrent_search_results.__len__() > 0:
+            if len(torrent_search_results) > 0:
                 torrent_search_result_list_for_missing_shows += torrent_search_results
             else:
                 EventLogHelper.log_info(
@@ -128,7 +128,7 @@ class AppController:
                 show, media, self.app_config
             )
 
-            if torrent_search_results.__len__() > 0:
+            if len(torrent_search_results) > 0:
                 print()
                 torrent_search_result_list += torrent_search_results
             else:
@@ -220,7 +220,7 @@ class AppController:
                     print('-------------------------------------------------------')
                     search_results = self.search_nyaa_for_shows(download_queue)
 
-                    if search_results.__len__() > 0:
+                    if search_results is not None and len(search_results) > 0:
                         for torrent_info in search_results:
                             torrents = self.__find_downloadable_torrents(torrent_info)
                             if AppController.__downloads_are_not_empty(torrents):

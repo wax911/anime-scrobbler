@@ -21,7 +21,7 @@ class AppStore:
 
     def save_or_update(self, value: Optional[Dict]):
         result_ids: List[Any] = self.db.upsert(value, where('name') == value['name'])
-        if result_ids.__len__() < 1:
+
             EventLogHelper.log_error(f"Error objects to {APP_DATABASE}",
                                      self.__class__.__name__,
                                      inspect.currentframe().f_code.co_name,
