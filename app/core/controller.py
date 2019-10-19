@@ -195,6 +195,7 @@ class AppController:
             filename=torrent_info.download_url
         )
 
+        torrent_info.is_queued = success
         if success:
             model = self.nyaa_model_helper.create_dictionary_class(torrent_info)
             self.app_store.save_or_update(model)
@@ -218,8 +219,16 @@ class AppController:
 
                     if search_results is not None and len(search_results) > 0:
                         for torrent_info in search_results:
-                            torrents = self.__find_downloadable_torrents(torrent_info)
+                            if torrent_info.anime_info is None:
                                 print()
+                                EventLogHelper.log_info(
+                                    f"Skipping torrent without anime info -> {torrent_info}",
+                                    self.__class__.__name__,
+                                    inspect.currentframe().f_code.co_name
+                                )
+                                continue
+                            downloaded_torrent = self.__find_downloadable_torrents(torrent_info)
+                            if downloaded_torrent is None or len(downloaded_torrent) < 1:
                                 queued: bool = self.__queue_downloaded_torrent_file(torrent_info)
                                 if not queued:
                                     self.__download_torrent_file(torrent_info)
