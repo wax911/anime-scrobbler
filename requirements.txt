@@ -6,3 +6,4 @@ dacite
 anitopy
 tinydb
 transmission-clutch
+Unidecode
