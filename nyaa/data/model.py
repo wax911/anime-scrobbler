@@ -86,10 +86,11 @@ class TorrentInfo:
                     or parsed_file_name.__contains__('release_information') \
                     and parsed_file_name['release_information'] == 'Batch':
                 print()
-                EventLogHelper.log_info(f"Skipping anime for torrent : {self.name}\n"
-                                        f"details -> {parsed_file_name}",
-                                        self.__class__.__name__,
-                                        inspect.currentframe().f_code.co_name)
+                EventLogHelper.log_info(
+                    f"Skipping torrent : `{self.name}` | {parsed_file_name}",
+                    self.__class__.__name__,
+                    inspect.currentframe().f_code.co_name
+                )
                 print('<------------------------------------------------------------>')
                 return False
             else:
@@ -98,10 +99,12 @@ class TorrentInfo:
                 return True
         except Exception as e:
             print()
-            EventLogHelper.log_info(f"Error converting dictionary to data class\n"
-                                    f"details -> {e} | {parsed_file_name}",
-                                    self.__class__.__name__,
-                                    inspect.currentframe().f_code.co_name)
+            EventLogHelper.log_info(
+                f"Error converting dictionary to data class\n"
+                f"Details: {e} | {parsed_file_name}",
+                self.__class__.__name__,
+                inspect.currentframe().f_code.co_name
+            )
             print('<------------------------------------------------------------>')
             return False
 
@@ -139,10 +142,12 @@ class NyaaModelHelper:
             parsed_object = from_dict(TorrentInfo, response)
         except Exception as e:
             print()
-            EventLogHelper.log_info(f"Error converting dictionary to data class\n"
-                                    f"details -> `{e}`",
-                                    self.__class__.__name__,
-                                    inspect.currentframe().f_code.co_name)
+            EventLogHelper.log_info(
+                f"Error converting dictionary to data class\n"
+                f"Details: {e}",
+                self.__class__.__name__,
+                inspect.currentframe().f_code.co_name
+            )
             print('<------------------------------------------------------------>')
         return parsed_object
 
@@ -152,9 +157,11 @@ class NyaaModelHelper:
             parsed_dictionary = dict(response)
         except Exception as e:
             print()
-            EventLogHelper.log_info(f"Error converting data class to dictionary\n"
-                                    f"details -> {e}",
-                                    self.__class__.__name__,
-                                    inspect.currentframe().f_code.co_name)
+            EventLogHelper.log_info(
+                f"Error converting data class to dictionary\n"
+                f"Details: {e}",
+                self.__class__.__name__,
+                inspect.currentframe().f_code.co_name
+            )
             print('<------------------------------------------------------------>')
         return parsed_dictionary

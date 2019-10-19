@@ -75,8 +75,8 @@ class AppController:
                         shows_in_plex_matching_users_list += show
                         show_media_entry_mapped_to_plex.append(entry)
         EventLogHelper.log_info(
-            f"Fetched list of shows by title, returned {shows_in_plex_matching_users_list.__len__()} results.\n"
-            f"Items which could not be found in plex {shows_missing_in_plex_found_on_users_list.__len__()}.",
+            f"Fetched list of shows by title, returned {len(shows_in_plex_matching_users_list)} results.\n"
+            f"Items which could not be found in plex {len(shows_missing_in_plex_found_on_users_list)}.",
             self.__class__.__name__,
             inspect.currentframe().f_code.co_name
         )
@@ -229,9 +229,11 @@ class AppController:
                                     self.__download_torrent_file(torrent_info)
                             else:
                                 print()
-                                EventLogHelper.log_info(f"Skipping existing download -> {torrent_info.anime_info}",
-                                                        self.__class__.__name__,
-                                                        inspect.currentframe().f_code.co_name)
+                                EventLogHelper.log_info(
+                                    f"Skipping existing download -> {torrent_info.anime_info}",
+                                    self.__class__.__name__,
+                                    inspect.currentframe().f_code.co_name
+                                )
                     else:
                         print()
                         EventLogHelper.log_info(

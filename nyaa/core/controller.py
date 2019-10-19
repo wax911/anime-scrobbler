@@ -96,8 +96,8 @@ class NyaaController(NyaaControllerHelper):
             search_results = Nyaa.search(keyword=search_term, category='1', page=search_page)
             if search_results:
                 EventLogHelper.log_info(
-                    f"Nyaa search results found for search term: {search_term} | page: {search_page}"
-                    f" | found `{search_results.__len__()}` results",
+                    f"Nyaa search results found for search term: `{search_term}` | on page: `{search_page}`"
+                    f" | found `{len(search_results)}` results",
                     "NyaaController",
                     inspect.currentframe().f_code.co_name
                 )
