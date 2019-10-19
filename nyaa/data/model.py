@@ -1,7 +1,7 @@
 import inspect
 from dataclasses import dataclass
 from re import match, IGNORECASE
-from typing import Optional, Dict, Union
+from typing import Optional, Dict, Union, List
 
 from anitopy import anitopy
 from dacite import from_dict
@@ -133,14 +133,14 @@ class NyaaModelHelper:
     def __init__(self) -> None:
         super().__init__()
 
-    def create_data_class(self, response: Optional[Dict]) -> Optional[TorrentInfo]:
+    def create_data_class(self, response: Dict[Optional[str], Optional[str]]) -> Optional[TorrentInfo]:
         parsed_object: Optional[TorrentInfo] = None
         try:
             parsed_object = from_dict(TorrentInfo, response)
         except Exception as e:
             print()
             EventLogHelper.log_info(f"Error converting dictionary to data class\n"
-                                    f"details -> {e}",
+                                    f"details -> `{e}`",
                                     self.__class__.__name__,
                                     inspect.currentframe().f_code.co_name)
             print('<------------------------------------------------------------>')
