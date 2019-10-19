@@ -1,19 +1,18 @@
 import inspect
 import json
 
-from typing import Optional, List, Tuple
-from difflib import SequenceMatcher
+from typing import Optional, List
 from dacite import from_dict
 from tinydb import where
 
-from anilist import AniListController, MediaTitle, MediaEntry, AniListStore, AiringSchedule
+from anilist import AniListController, MediaEntry, AniListStore
 from app import EventLogHelper
 from nyaa import NyaaController, TorrentInfo, AppConfig, NyaaModelHelper
 
 from transmission import TransmissionController
-from plex import PlexController, Show, Episode
+from plex import PlexController, Show
 
-from ..data import AppStore, DownloadableQueue, ShowMediaEntry
+from ..data import AppStore, DownloadableQueue
 from ..util import StorageUtil
 
 
@@ -38,24 +37,6 @@ class AppController:
         json_string = json.loads(StorageUtil.read_file('config', 'app.json'))
         return from_dict(AppConfig, json_string)
 
-    def __search_for_anime_by_title(self, show_title: str, media_entries: List[MediaEntry]) -> MediaEntry:
-        """
-        Find anilist shows matching the show title in plex
-        :param show_title:
-        :param media_entries:
-        :return:
-        """
-        for media_entry in media_entries:
-            media_title: MediaTitle = media_entry.media.title
-            if media_title.romaji is not None and \
-                    SequenceMatcher(None, media_title.romaji, show_title).ratio() > 0.75 or \
-                    media_title.english is not None and \
-                    SequenceMatcher(None, media_title.english, show_title).ratio() > 0.75:
-                EventLogHelper.log_info(f"Search match found -> `{show_title}`",
-                                        self.__class__.__name__,
-                                        inspect.currentframe().f_code.co_name)
-                return media_entry
-
     def fetch_anime_list(self) -> List[Optional[MediaEntry]]:
         """
         Fetches a media group of anime by the passed list name
@@ -67,6 +48,10 @@ class AppController:
         media_list_entries = anilist_store.search(self.anilist_search_query)
         return media_list_entries
 
+    @staticmethod
+    def __add_missing_item(media_entry: MediaEntry, append_list: List[Optional[MediaEntry]]):
+        append_list.append(media_entry)
+
     def find_plex_show(self, media_entries: List[MediaEntry]) -> DownloadableQueue:
         """
         Fetches a list of shows by title if they exist, if not an empty collection would be returned
@@ -74,100 +59,91 @@ class AppController:
         :return: a list of optional shows
         """
         shows_in_plex_matching_users_list: List[Optional[Show]] = list()
+        show_media_entry_mapped_to_plex: List[Optional[MediaEntry]] = list()
         shows_missing_in_plex_found_on_users_list: List[Optional[MediaEntry]] = list()
         for entry in media_entries:
             if entry.media.status != 'NOT_YET_RELEASED':
                 if entry.status != 'COMPLETED':
                     show = self.plex_controller.find_all_by_title(
-                        entry.media.title,
-                        entry.media.episodes,
-                        lambda: {shows_missing_in_plex_found_on_users_list.append(entry)}
+                        entry,
+                        lambda: self.__add_missing_item(
+                            entry,
+                            shows_missing_in_plex_found_on_users_list
+                        )
                     )
                     if show:
                         shows_in_plex_matching_users_list += show
+                        show_media_entry_mapped_to_plex.append(entry)
         EventLogHelper.log_info(
-            f"Fetched list of shows by title, returned {shows_in_plex_matching_users_list.__len__()} results",
+            f"Fetched list of shows by title, returned {len(shows_in_plex_matching_users_list)} results.\n"
+            f"Items which could not be found in plex {len(shows_missing_in_plex_found_on_users_list)}.",
             self.__class__.__name__,
             inspect.currentframe().f_code.co_name
         )
         return DownloadableQueue(
             shows_in_plex_matching_users_list,
-            shows_missing_in_plex_found_on_users_list
+            shows_missing_in_plex_found_on_users_list,
+            show_media_entry_mapped_to_plex
         )
 
-    @staticmethod
-    def __has_episode_available(airing_schedule: Optional[AiringSchedule], episode_count: int) -> bool:
-        if airing_schedule is not None:
-            return airing_schedule.episode > episode_count
-        return True
-
-    def find_missing_show_episode_entries(
-            self,
-            download_queue: DownloadableQueue,
-            entries: List[Optional[MediaEntry]]
-    ) -> ShowMediaEntry:
-        """
-        Compares the number of available episodes in each season with those on anilist
-        :param download_queue:
-        :param entries:
-        :return: tuple of corresponding shows and media entries
-        """
-        shows_with_missing_episodes: List[Optional[Show]] = list()
-        media_entry_with_missing_episodes: List[Optional[MediaEntry]] = list(
-            download_queue.shows_missing_in_plex
-        )
-        for show in download_queue.shows_found_in_plex:
-            media_entry: MediaEntry = self.__search_for_anime_by_title(show.title, entries)
-            if media_entry is not None:
-                episodes: List[Optional[Episode]] = show.episodes()
-                if media_entry.media.episodes is not None:
-                    if media_entry.media.episodes > episodes.__len__():
-                        shows_with_missing_episodes.append(show)
-                        media_entry_with_missing_episodes.append(media_entry)
-                elif media_entry.media.status == 'RELEASING':
-                    if AppController.__has_episode_available(
-                            media_entry.media.nextAiringEpisode,
-                            episodes.__len__()
-                    ):
-                        shows_with_missing_episodes.append(show)
-                        media_entry_with_missing_episodes.append(media_entry)
-
-        return ShowMediaEntry(
-            shows_with_missing_episodes,
-            media_entry_with_missing_episodes
-        )
-
-    def search_nyaa_for_shows(self, download_queue: ShowMediaEntry) -> Optional[List[TorrentInfo]]:
+    def search_nyaa_for_shows(self, download_queue: DownloadableQueue) -> Optional[List[TorrentInfo]]:
         """
         Searches nyaa.si for torrents matching the tittle name/s
         :param download_queue: a model consisting of a tuple shows and media entries of missing episodes
         :return: a list of torrent results
         """
         torrent_search_result_list: List[TorrentInfo] = list()
-        for show, media in zip(download_queue.shows, download_queue.media_entries):
-            torrent_search_results: List[Optional[TorrentInfo]] = self.nyaa_controller.search_for_show(
-                show,
-                media,
-                self.app_config
+        torrent_search_result_list_for_missing_shows: List[TorrentInfo] = list()
+
+        print()
+        print('-------------------------------------------------------')
+
+        EventLogHelper.log_info(
+            f"Searching for missing items in plex",
+            self.__class__.__name__,
+            inspect.currentframe().f_code.co_name
+        )
+        for media in download_queue.shows_missing_in_plex:
+            torrent_search_results = self.nyaa_controller.search_for_missing_shows(media, self.app_config)
+            if len(torrent_search_results) > 0:
+                torrent_search_result_list_for_missing_shows += torrent_search_results
+            else:
+                EventLogHelper.log_info(
+                    f"Unable to find {media.media.title.userPreferred} from nyaa.si",
+                    self.__class__.__name__,
+                    inspect.currentframe().f_code.co_name
+                )
+        print('-------------------------------------------------------')
+        print()
+
+        print()
+        print('-------------------------------------------------------')
+        EventLogHelper.log_info(
+            f"Searching for matching items in plex",
+            self.__class__.__name__,
+            inspect.currentframe().f_code.co_name
+        )
+        for show, media in zip(download_queue.shows_found_in_plex, download_queue.show_media_entry_in_plex):
+            torrent_search_results = self.nyaa_controller.search_for_shows(
+                show, media, self.app_config
             )
-            if torrent_search_results.__len__() > 0:
-                EventLogHelper.log_info(f"Found {show.title} or {media.media.title.userPreferred} from nyaa.si",
-                                        self.__class__.__name__,
-                                        inspect.currentframe().f_code.co_name)
+
+            if len(torrent_search_results) > 0:
+                print()
                 torrent_search_result_list += torrent_search_results
             else:
                 EventLogHelper.log_info(
-                    f"Unable to find {show.title} or {media.media.title.userPreferred} from nyaa.si",
+                    f"No new releases found for the following torrent/s `{media.generate_search_terms()}` on nyaa.si",
                     self.__class__.__name__,
-                    inspect.currentframe().f_code.co_name)
-        return torrent_search_result_list
+                    inspect.currentframe().f_code.co_name
+                )
+                print()
+        print('-------------------------------------------------------')
+        print()
+        return torrent_search_result_list + torrent_search_result_list_for_missing_shows
 
     def __find_downloadable_torrents(self, torrent_info: TorrentInfo) -> List[Optional[TorrentInfo]]:
         return self.app_store.search(where('name') == torrent_info.name)
-
-    @staticmethod
-    def __downloads_are_not_empty(torrents: List[Optional[TorrentInfo]]) -> bool:
-        return torrents is None or torrents.__len__() < 1
 
     def __download_torrent_file(self, torrent_info: TorrentInfo):
         print()
@@ -219,6 +195,7 @@ class AppController:
             filename=torrent_info.download_url
         )
 
+        torrent_info.is_queued = success
         if success:
             model = self.nyaa_model_helper.create_dictionary_class(torrent_info)
             self.app_store.save_or_update(model)
@@ -237,25 +214,31 @@ class AppController:
                 download_queue: DownloadableQueue = self.find_plex_show(anime_list)
                 print('-------------------------------------------------------')
                 if download_queue.contains_items():
-                    missing_shows: ShowMediaEntry = self.find_missing_show_episode_entries(
-                        download_queue,
-                        anime_list
-                    )
                     print('-------------------------------------------------------')
-                    search_results = self.search_nyaa_for_shows(missing_shows)
+                    search_results = self.search_nyaa_for_shows(download_queue)
 
-                    if search_results.__len__() > 0:
+                    if search_results is not None and len(search_results) > 0:
                         for torrent_info in search_results:
-                            torrents = self.__find_downloadable_torrents(torrent_info)
-                            if AppController.__downloads_are_not_empty(torrents):
+                            if torrent_info.anime_info is None:
+                                print()
+                                EventLogHelper.log_info(
+                                    f"Skipping torrent without anime info -> {torrent_info}",
+                                    self.__class__.__name__,
+                                    inspect.currentframe().f_code.co_name
+                                )
+                                continue
+                            downloaded_torrent = self.__find_downloadable_torrents(torrent_info)
+                            if downloaded_torrent is None or len(downloaded_torrent) < 1:
                                 queued: bool = self.__queue_downloaded_torrent_file(torrent_info)
                                 if not queued:
                                     self.__download_torrent_file(torrent_info)
                             else:
                                 print()
-                                EventLogHelper.log_info(f"Skipping existing download -> {torrent_info.anime_info}",
-                                                        self.__class__.__name__,
-                                                        inspect.currentframe().f_code.co_name)
+                                EventLogHelper.log_info(
+                                    f"Skipping existing download -> {torrent_info.anime_info}",
+                                    self.__class__.__name__,
+                                    inspect.currentframe().f_code.co_name
+                                )
                     else:
                         print()
                         EventLogHelper.log_info(
