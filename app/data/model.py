@@ -9,12 +9,7 @@ from anilist import MediaEntry
 class DownloadableQueue:
     shows_found_in_plex: List[Optional[Show]]
     shows_missing_in_plex: List[Optional[MediaEntry]]
+    show_media_entry_in_plex: List[Optional[MediaEntry]]
 
     def contains_items(self):
-        return self.shows_found_in_plex or self.shows_missing_in_plex
-
-
-@dataclass()
-class ShowMediaEntry:
-    shows: List[Optional[Show]]
-    media_entries: List[Optional[MediaEntry]]
+        return self.shows_found_in_plex or self.shows_missing_in_plex or self.show_media_entry_in_plex
