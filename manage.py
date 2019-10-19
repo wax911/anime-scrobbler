@@ -15,7 +15,7 @@ def __description() -> str:
 
 
 def __usage() -> str:
-    return f"manage.py --from-list list_name_1, list_name_2\n\n" \
+    return f"manage.py --from-list list_name\n\n" \
         f"Where list_name is one of the following:\n" \
         f"{LIST_KEY_CURRENT}, {LIST_KEY_PLANNING}, {LIST_KEY_COMPLETED}, {LIST_KEY_PAUSED}, {LIST_KEY_REPEATING}\n"
 

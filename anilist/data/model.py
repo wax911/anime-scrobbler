@@ -1,9 +1,9 @@
 import inspect
+from unidecode import unidecode
 from dataclasses import dataclass
-from typing import Optional, List, Dict, Iterator
+from typing import Optional, List, Dict
 
 from dacite import from_dict
-from plexapi.video import Episode
 
 from app import EventLogHelper
 
@@ -74,6 +74,7 @@ class Media:
     episodes: Optional[int]
     isAdult: bool
     isFavourite: bool
+    synonyms: Optional[List[str]]
     nextAiringEpisode: Optional[AiringSchedule]
 
     def __iter__(self):
@@ -91,6 +92,7 @@ class Media:
         yield 'episodes', self.episodes
         yield 'isAdult', self.isAdult
         yield 'isFavourite', self.isFavourite
+        yield 'synonyms', self.synonyms
         yield 'nextAiringEpisode', self.nextAiringEpisode
 
 
@@ -105,6 +107,22 @@ class MediaEntry:
     private: bool
     hiddenFromStatusLists: bool
     media: Media
+
+    def generate_search_terms(self) -> List[str]:
+        """
+        Returns a list of possible search terms
+        :return:
+        """
+        search_terms: List[str] = list()
+        if self.media.title.english is not None:
+            search_terms.append(unidecode(self.media.title.english))
+        if self.media.title.romaji is not None and not search_terms.count(self.media.title.romaji):
+            search_terms.append(unidecode(self.media.title.romaji))
+
+        for synonym in self.media.synonyms:
+            search_terms.append(unidecode(synonym))
+
+        return search_terms
 
     def get_episode_backlog(self) -> int:
         """
@@ -130,7 +148,7 @@ class MediaEntry:
         Checks if the total/maximum number of episodes are less than or equal to the backlog
         :return: true if this item can be queued, otherwise false
         """
-        return int(episode_number) <= self.get_episode_backlog()
+        return int(float(episode_number)) <= self.get_episode_backlog()
 
     def __iter__(self):
         yield 'id', self.id

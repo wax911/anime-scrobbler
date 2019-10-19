@@ -45,7 +45,7 @@ class TransmissionController:
             torrent = self.client.torrent.add(filename=filename)
             sleep(.5)
             EventLogHelper.log_info(
-                f"Added torrent magnet link -> {torrent} | {filename}",
+                f"Added torrent file url to torrent client -> {torrent} | {filename}",
                 self.__class__.__name__,
                 inspect.currentframe().f_code.co_name
             )
@@ -70,7 +70,7 @@ class TransmissionController:
             torrent = self.client.torrent.add(metainfo=file_contents)
             sleep(1.5)
             EventLogHelper.log_info(
-                f"Added torrent file -> {torrent} | {file_path}",
+                f"Added torrent file to download client -> {torrent} | {file_path}",
                 self.__class__.__name__,
                 inspect.currentframe().f_code.co_name
             )

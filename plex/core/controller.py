@@ -1,14 +1,17 @@
 import inspect
 import json
 import logging
+from difflib import SequenceMatcher
 from typing import List, Optional
-
+from unidecode import unidecode
 from plexapi.library import ShowSection
 from plexapi.server import PlexServer
 from plexapi.video import Show
 
-from anilist import MediaTitle
+from anilist import MediaEntry
 from app import StorageUtil, EventLogHelper
+
+from ..data import SearchResult
 
 
 class PlexController:
@@ -27,44 +30,35 @@ class PlexController:
                 logging.CRITICAL
             )
 
-    def find_all_by_title(self, media_title: MediaTitle, episodes: Optional[int], add_missing) -> List[Optional[Show]]:
+    def find_all_by_title(self, media_entry: MediaEntry, add_missing) -> List[Optional[Show]]:
         """
         Search for plex shows within a configuration given library name
         :param add_missing:
-        :param media_title: anime title to search for
-        :param episodes: number of available episodes
+        :param media_entry: media to look for
         :return: list of optional shows
         """
         all_shows = list()
         try:
             anime_section: Optional[ShowSection] = self.plex.library.section(self.config['section_library_name'])
             if anime_section is not None:
-                search_term: str = media_title.english
-                if search_term is None:
-                    search_term = media_title.romaji
-                for show in anime_section.search(title=search_term):
-                    show_item: Show = show
-                    if episodes is not None and show_item.episodes().__len__() >= episodes:
-                        continue
-                    if show_item.title.lower() != search_term.lower():
-                        EventLogHelper.log_info(f"Skipping item mismatch term {show_item.title} != {search_term}",
-                                                self.__class__.__name__,
-                                                inspect.currentframe().f_code.co_name)
-                        continue
-                    EventLogHelper.log_info(
-                        f"Found `{search_term}` in plex, adding to list of possible downloadable items",
+                search_result: SearchResult = self.__search_for_shows(anime_section, media_entry)
+                if search_result.search_results:
+                    for show in search_result.search_results:
+                        show_episodes_count = len(show.episodes())
+                        episodes = media_entry.media.episodes
+                        if show_episodes_count >= episodes:
+                            continue
+                        all_shows.append(show)
+                else:
+                    print()
+                    search_term = media_entry.media.title.userPreferred
+                    EventLogHelper.log_warning(
+                        f"Search term not found `{search_term}`, adding to missing shows list",
                         self.__class__.__name__,
                         inspect.currentframe().f_code.co_name
                     )
-                    all_shows.append(show_item)
-            else:
-                EventLogHelper.log_warning(
-                    f"Unable to find show title-> `{media_title.userPreferred}` | "
-                    f"{self.config['section_library_name']} in plex, adding to list of missing shows",
-                    __name__,
-                    inspect.currentframe().f_code.co_name
-                )
-                add_missing()
+                    print()
+                    add_missing()
         except Exception as e:
             EventLogHelper.log_info(
                 f"{e}",
@@ -78,3 +72,44 @@ class PlexController:
 
     def update_show(self, show: Optional[ShowSection]):
         pass
+
+    @staticmethod
+    def __matches_search_term(show_title: Optional[str], search_term: Optional[str]) -> bool:
+        if show_title and search_term:
+            show_title_uni = unidecode(show_title).lower()
+            search_term_uni = unidecode(search_term).lower()
+            match_ratio = SequenceMatcher(a=show_title_uni, b=search_term_uni).ratio()
+            return match_ratio >= .98
+        return False
+
+    @staticmethod
+    def __search_for_shows(anime_section: ShowSection, media_entry: MediaEntry) -> SearchResult:
+        search_results: List[Show] = list()
+        search_match_term_match: str = ""
+
+        search_terms: List[str] = media_entry.generate_search_terms()
+
+        for search_term in search_terms:
+            search_results = anime_section.search(title=search_term)
+            if search_results:
+                search_match_term_match = search_term
+                break
+
+        filtered_search_results: List[Show] = list(
+            filter(
+                lambda show: PlexController.__matches_search_term(
+                    show.title, search_match_term_match
+                ), search_results)
+        )
+
+        if filtered_search_results:
+            EventLogHelper.log_info(
+                f"Search term match found `{search_match_term_match}` -> `{filtered_search_results}`",
+                "PlexController",
+                inspect.currentframe().f_code.co_name
+            )
+
+        return SearchResult(
+            filtered_search_results,
+            search_match_term_match
+        )
