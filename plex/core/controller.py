@@ -44,7 +44,7 @@ class PlexController:
                 search_result: SearchResult = self.__search_for_shows(anime_section, media_entry)
                 if search_result.search_results:
                     for show in search_result.search_results:
-                        show_episodes_count = show.episodes().__len__()
+                        show_episodes_count = len(show.episodes())
                         episodes = media_entry.media.episodes
                         if show_episodes_count >= episodes:
                             continue

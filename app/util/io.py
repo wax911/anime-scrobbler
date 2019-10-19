@@ -65,9 +65,8 @@ class StorageUtil:
             path = Path(creation_path)
             path.mkdir(parents=True, exist_ok=True)
         with open(os.path.join(creation_path, filename), write_mode) as writer:
-            content_size = contents.headers["Content-Length"]
             EventLogHelper.log_info(
-                f"Downloading file -> {filename} | Size: {content_size}",
+                f"Downloading file -> {filename}",
                 __name__,
                 inspect.currentframe().f_code.co_name
             )

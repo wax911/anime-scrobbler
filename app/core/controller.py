@@ -75,8 +75,8 @@ class AppController:
                         shows_in_plex_matching_users_list += show
                         show_media_entry_mapped_to_plex.append(entry)
         EventLogHelper.log_info(
-            f"Fetched list of shows by title, returned {shows_in_plex_matching_users_list.__len__()} results.\n"
-            f"Items which could not be found in plex {shows_missing_in_plex_found_on_users_list.__len__()}.",
+            f"Fetched list of shows by title, returned {len(shows_in_plex_matching_users_list)} results.\n"
+            f"Items which could not be found in plex {len(shows_missing_in_plex_found_on_users_list)}.",
             self.__class__.__name__,
             inspect.currentframe().f_code.co_name
         )
@@ -105,7 +105,7 @@ class AppController:
         )
         for media in download_queue.shows_missing_in_plex:
             torrent_search_results = self.nyaa_controller.search_for_missing_shows(media, self.app_config)
-            if torrent_search_results.__len__() > 0:
+            if len(torrent_search_results) > 0:
                 torrent_search_result_list_for_missing_shows += torrent_search_results
             else:
                 EventLogHelper.log_info(
@@ -128,7 +128,7 @@ class AppController:
                 show, media, self.app_config
             )
 
-            if torrent_search_results.__len__() > 0:
+            if len(torrent_search_results) > 0:
                 print()
                 torrent_search_result_list += torrent_search_results
             else:
@@ -144,10 +144,6 @@ class AppController:
 
     def __find_downloadable_torrents(self, torrent_info: TorrentInfo) -> List[Optional[TorrentInfo]]:
         return self.app_store.search(where('name') == torrent_info.name)
-
-    @staticmethod
-    def __downloads_are_not_empty(torrents: List[Optional[TorrentInfo]]) -> bool:
-        return torrents is None or torrents.__len__() < 1
 
     def __download_torrent_file(self, torrent_info: TorrentInfo):
         print()
@@ -199,6 +195,7 @@ class AppController:
             filename=torrent_info.download_url
         )
 
+        torrent_info.is_queued = success
         if success:
             model = self.nyaa_model_helper.create_dictionary_class(torrent_info)
             self.app_store.save_or_update(model)
@@ -220,18 +217,28 @@ class AppController:
                     print('-------------------------------------------------------')
                     search_results = self.search_nyaa_for_shows(download_queue)
 
-                    if search_results.__len__() > 0:
+                    if search_results is not None and len(search_results) > 0:
                         for torrent_info in search_results:
-                            torrents = self.__find_downloadable_torrents(torrent_info)
-                            if AppController.__downloads_are_not_empty(torrents):
+                            if torrent_info.anime_info is None:
+                                print()
+                                EventLogHelper.log_info(
+                                    f"Skipping torrent without anime info -> {torrent_info}",
+                                    self.__class__.__name__,
+                                    inspect.currentframe().f_code.co_name
+                                )
+                                continue
+                            downloaded_torrent = self.__find_downloadable_torrents(torrent_info)
+                            if downloaded_torrent is None or len(downloaded_torrent) < 1:
                                 queued: bool = self.__queue_downloaded_torrent_file(torrent_info)
                                 if not queued:
                                     self.__download_torrent_file(torrent_info)
                             else:
                                 print()
-                                EventLogHelper.log_info(f"Skipping existing download -> {torrent_info.anime_info}",
-                                                        self.__class__.__name__,
-                                                        inspect.currentframe().f_code.co_name)
+                                EventLogHelper.log_info(
+                                    f"Skipping existing download -> {torrent_info.anime_info}",
+                                    self.__class__.__name__,
+                                    inspect.currentframe().f_code.co_name
+                                )
                     else:
                         print()
                         EventLogHelper.log_info(

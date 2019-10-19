@@ -43,12 +43,27 @@ class NyaaControllerHelper:
             show_seasons: List[Optional[Season]] = show.seasons()
             for season_item in show_seasons:
                 is_finished_watching: bool = season_item.isWatched
-                if show_seasons.__len__() < 2:
+                if len(show_seasons) < 2:
                     is_finished_watching = False
                 """Do some magic here :')"""
                 if not is_finished_watching:
                     return anime_info.has_season_information(), season_item
         return False, None
+
+    def _add_anime_info(self, search_results: Optional[List[TorrentInfo]]):
+        torrents: List[Optional[TorrentInfo]] = list()
+
+        for search_result in search_results:
+            sleep(self.sleep_duration)
+            if not search_result.added_anime_info():
+                continue
+
+            anime_info = search_result.anime_info
+            if f"[{anime_info.release_group}]" != self.config.torrent_preferred_group:
+                continue
+            torrents.append(search_result)
+
+        return torrents
 
     def _find_missing_episodes(
             self,
@@ -96,8 +111,8 @@ class NyaaController(NyaaControllerHelper):
             search_results = Nyaa.search(keyword=search_term, category='1', page=search_page)
             if search_results:
                 EventLogHelper.log_info(
-                    f"Nyaa search results found for search term: {search_term} | page: {search_page}"
-                    f" | found `{search_results.__len__()}` results",
+                    f"Nyaa search results found for search term: `{search_term}` | on page: `{search_page}`"
+                    f" | found `{len(search_results)}` results",
                     "NyaaController",
                     inspect.currentframe().f_code.co_name
                 )
@@ -126,7 +141,7 @@ class NyaaController(NyaaControllerHelper):
             temp_search_results = self.__search_for_matching_until_found(
                 search_page, self._build_search_terms(self.config, media_entry)
             )
-            if temp_search_results is not None and temp_search_results.__len__() > 0:
+            if temp_search_results is not None and len(temp_search_results) > 0:
                 search_results += temp_search_results
                 search_page += 1
             else:
@@ -163,7 +178,7 @@ class NyaaController(NyaaControllerHelper):
             temp_search_results = self.__search_for_matching_until_found(
                 search_page, self._build_search_terms(self.config, media_entry)
             )
-            if temp_search_results is not None and temp_search_results.__len__() > 0:
+            if temp_search_results is not None and len(temp_search_results) > 0:
                 search_results += temp_search_results
                 search_page += 1
             else:
@@ -176,7 +191,7 @@ class NyaaController(NyaaControllerHelper):
             if torrent_info is not None:
                 torrent_info_results.append(torrent_info)
 
-        return torrent_info_results
+        return self._add_anime_info(torrent_info_results)
 
     @staticmethod
     def download_torrent_file(torrent_info: TorrentInfo, config: AppConfig) -> bool:
