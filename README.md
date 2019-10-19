@@ -1,6 +1,7 @@
 # Anime Scrobbler (_for research purposes of course_)
 
-Yet another potentially useless utility to automatically download missing shows from your anilist list.
+Just an automation utility for fun, ~~potentially useless?~~  to download missing shows from 
+your [AniList](https://anilist.co) collection not present in a plex media server.
 
 ## Dependencies
 
@@ -32,22 +33,51 @@ Nyaa.search(keyword="Shoukoku no Altair", category=1)
 }
 ```
 
-### [Pickle DB](https://github.com/patx/pickledb)
+### [TinyDB](https://github.com/msiemens/tinydb)
 
-> pickleDB is lightweight, fast, and simple database based on the
-[json](https://docs.python.org/3/library/json.html) module.
-And it's BSD licensed!
+> TinyDB is a lightweight document oriented database optimized for your happiness :) 
+It's written in pure Python and has no external dependencies. The target are small apps 
+that would be blown away by a SQL-DB or an external database server.
+
+#### Example Code
 
 ```python
-import pickledb
+from tinydb import TinyDB
+db = TinyDB('/path/to/db.json')
+db.insert({'int': 1, 'char': 'a'})
+db.insert({'int': 1, 'char': 'b'})
+```
 
-db = pickledb.load('test.db', False)
+__Query Language__
 
-db.set('key', 'value')
+```python
+from tinydb import TinyDB, Query
 
-db.get('key')
+User = Query()
+db = TinyDB('/path/to/db.json')
+# Search for a field value
+db.search(User.name == 'John')
+[{'name': 'John', 'age': 22}, {'name': 'John', 'age': 37}]
 
-db.dump()
+# Combine two queries with logical and
+db.search((User.name == 'John') & (User.age <= 30))
+[{'name': 'John', 'age': 22}]
+
+# Combine two queries with logical or
+db.search((User.name == 'John') | (User.name == 'Bob'))
+[{'name': 'John', 'age': 22}, {'name': 'John', 'age': 37}, {'name': 'Bob', 'age': 42}]
+
+# More possible comparisons:  !=  <  >  <=  >=
+# More possible checks: where(...).matches(regex), where(...).test(your_test_func)
+```
+
+__Tables__
+
+```python
+table = db.table('name')
+table.insert({'value': True})
+table.all()
+[{'value': True}]
 ```
 
 ### [Plex API](https://github.com/pkkid/python-plexapi)
@@ -148,4 +178,18 @@ anitopy.parse('[TaigaSubs]_Toradora!_(2008)_-_01v2_-_Tiger_and_Dragon_[1280x720_
     'video_resolution': '1280x720',
     'video_term': 'H.264'
 }
+```
+
+### [Unidecode](https://pypi.org/project/Unidecode/)
+
+> The module exports a function that takes an Unicode object (Python 2.x) or string (Python 3.x) and returns a string (that can be encoded to ASCII bytes in Python 3.x):
+
+```python
+from unidecode import unidecode
+unidecode(u'ko\u017eu\u0161\u010dek')
+# outputs > 'kozuscek'
+unidecode(u'30 \U0001d5c4\U0001d5c6/\U0001d5c1')
+# outputs > '30 km/h'
+unidecode(u"\u5317\u4EB0")
+# outputs > 'Bei Jing '
 ```

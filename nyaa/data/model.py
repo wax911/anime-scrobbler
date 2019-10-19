@@ -1,6 +1,12 @@
-from re import match, IGNORECASE
+import inspect
 from dataclasses import dataclass
-from typing import Optional, List
+from re import match, IGNORECASE
+from typing import Optional, Dict, Union, List
+
+from anitopy import anitopy
+from dacite import from_dict
+
+from app import EventLogHelper
 
 
 @dataclass()
@@ -12,9 +18,13 @@ class AppConfig:
     torrent_queued_postfix: str
     torrent_keep_file_after_queuing: bool
 
+    def build_parent_save_path(self, child_directory: str) -> Union[bytes, str]:
+        import os
+        return os.path.join(self.torrent_download_directory, child_directory)
+
 
 @dataclass()
-class TorrentNameInfo:
+class TorrentAnimeInfo:
     file_name: Optional[str]
     file_extension: Optional[str]
     video_resolution: Optional[str]
@@ -36,6 +46,15 @@ class TorrentNameInfo:
                 return True
         return False
 
+    def __iter__(self):
+        yield 'file_name', self.file_name
+        yield 'file_extension', self.file_extension
+        yield 'video_resolution', self.video_resolution
+        yield 'episode_number', self.episode_number
+        yield 'anime_title', self.anime_title
+        yield 'release_group', self.release_group
+        yield 'season_number', self.season_number
+
 
 @dataclass()
 class TorrentInfo:
@@ -52,17 +71,90 @@ class TorrentInfo:
     seeders: str
     leechers: str
     hash: Optional[str]
-    anime_info: Optional[TorrentNameInfo]
+    anime_info: Optional[TorrentAnimeInfo]
+    is_queued: Optional[bool]
 
-    def add_anime_info(self, torrent_name_info: TorrentNameInfo) -> None:
+    def added_anime_info(self) -> bool:
         """
         Added anime info for the the current torrent
-        :param torrent_name_info:
-        :return:
+        :return: true if successful otherwise false if the release is a Batch
         """
-        self.anime_info = torrent_name_info
+        parsed_file_name = ""
+        try:
+            parsed_file_name = anitopy.parse(self.name)
+            if not isinstance(parsed_file_name['episode_number'], str) \
+                    or parsed_file_name.__contains__('release_information') \
+                    and parsed_file_name['release_information'] == 'Batch':
+                print()
+                EventLogHelper.log_info(f"Skipping anime for torrent : {self.name}\n"
+                                        f"details -> {parsed_file_name}",
+                                        self.__class__.__name__,
+                                        inspect.currentframe().f_code.co_name)
+                print('<------------------------------------------------------------>')
+                return False
+            else:
+                torrent_name_info = from_dict(TorrentAnimeInfo, parsed_file_name)
+                self.anime_info = torrent_name_info
+                return True
+        except Exception as e:
+            print()
+            EventLogHelper.log_info(f"Error converting dictionary to data class\n"
+                                    f"details -> {e} | {parsed_file_name}",
+                                    self.__class__.__name__,
+                                    inspect.currentframe().f_code.co_name)
+            print('<------------------------------------------------------------>')
+            return False
+
+    def __iter__(self):
+        yield 'id', self.id
+        yield 'category', self.category
+        yield 'uploader', self.uploader
+        yield 'website', self.website
+        yield 'url', self.url
+        yield 'name', self.name
+        yield 'download_url', self.download_url
+        yield 'magnet', self.magnet
+        yield 'size', self.size
+        yield 'date', self.date
+        yield 'seeders', self.seeders
+        yield 'leechers', self.leechers
+        yield 'hash', self.hash
+        yield 'anime_info', dict(self.anime_info)
+        yield 'is_queued', self.is_queued
 
 
-@dataclass()
-class TorrentWrapper:
-    response: Optional[List[TorrentInfo]]
+# @dataclass()
+# class TorrentWrapper:
+#     response: Optional[List[TorrentInfo]]
+
+
+class NyaaModelHelper:
+
+    def __init__(self) -> None:
+        super().__init__()
+
+    def create_data_class(self, response: Dict[Optional[str], Optional[str]]) -> Optional[TorrentInfo]:
+        parsed_object: Optional[TorrentInfo] = None
+        try:
+            parsed_object = from_dict(TorrentInfo, response)
+        except Exception as e:
+            print()
+            EventLogHelper.log_info(f"Error converting dictionary to data class\n"
+                                    f"details -> `{e}`",
+                                    self.__class__.__name__,
+                                    inspect.currentframe().f_code.co_name)
+            print('<------------------------------------------------------------>')
+        return parsed_object
+
+    def create_dictionary_class(self, response: Optional[TorrentInfo]) -> Optional[Dict]:
+        parsed_dictionary: Optional[Dict] = None
+        try:
+            parsed_dictionary = dict(response)
+        except Exception as e:
+            print()
+            EventLogHelper.log_info(f"Error converting data class to dictionary\n"
+                                    f"details -> {e}",
+                                    self.__class__.__name__,
+                                    inspect.currentframe().f_code.co_name)
+            print('<------------------------------------------------------------>')
+        return parsed_dictionary
