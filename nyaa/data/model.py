@@ -1,7 +1,7 @@
 import inspect
 from dataclasses import dataclass
 from re import match, IGNORECASE
-from typing import Optional, Dict, Union, List
+from typing import Optional, Dict, Union
 
 from anitopy import anitopy
 from dacite import from_dict
@@ -126,15 +126,7 @@ class TorrentInfo:
         yield 'is_queued', self.is_queued
 
 
-# @dataclass()
-# class TorrentWrapper:
-#     response: Optional[List[TorrentInfo]]
-
-
 class NyaaModelHelper:
-
-    def __init__(self) -> None:
-        super().__init__()
 
     def create_data_class(self, response: Dict[Optional[str], Optional[str]]) -> Optional[TorrentInfo]:
         parsed_object: Optional[TorrentInfo] = None

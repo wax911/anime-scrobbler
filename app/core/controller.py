@@ -145,10 +145,6 @@ class AppController:
     def __find_downloadable_torrents(self, torrent_info: TorrentInfo) -> List[Optional[TorrentInfo]]:
         return self.app_store.search(where('name') == torrent_info.name)
 
-    @staticmethod
-    def __downloads_are_not_empty(torrents: List[Optional[TorrentInfo]]) -> bool:
-        return torrents is None or torrents.__len__() < 1
-
     def __download_torrent_file(self, torrent_info: TorrentInfo):
         print()
         EventLogHelper.log_info(f"Downloading torrent for file -> {torrent_info.name}",
@@ -223,7 +219,7 @@ class AppController:
                     if search_results is not None and len(search_results) > 0:
                         for torrent_info in search_results:
                             torrents = self.__find_downloadable_torrents(torrent_info)
-                            if AppController.__downloads_are_not_empty(torrents):
+                                print()
                                 queued: bool = self.__queue_downloaded_torrent_file(torrent_info)
                                 if not queued:
                                     self.__download_torrent_file(torrent_info)
