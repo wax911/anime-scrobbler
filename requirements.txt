@@ -1,7 +1,9 @@
 requests
 nyaapy
-pickledb
 plexapi
 gql
 dacite
 anitopy
+tinydb
+transmission-clutch
+Unidecode

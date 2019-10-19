@@ -74,6 +74,7 @@ query MediaListCollection($userId: Int, $userName: String, $type: MediaType, $fo
                   volumes
                   isAdult
                   isFavourite
+                  synonyms
                   nextAiringEpisode {
                     ... on AiringSchedule {
                       id

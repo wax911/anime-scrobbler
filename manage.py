@@ -1,5 +1,7 @@
+import inspect
 import argparse
 from app import AppController
+from app.util.io import EventLogHelper
 
 LIST_KEY_CURRENT = "CURRENT"
 LIST_KEY_PLANNING = "PLANNING"
@@ -13,7 +15,7 @@ def __description() -> str:
 
 
 def __usage() -> str:
-    return f"manage.py --from-list list_name_1, list_name_2\n\n" \
+    return f"manage.py --from-list list_name\n\n" \
         f"Where list_name is one of the following:\n" \
         f"{LIST_KEY_CURRENT}, {LIST_KEY_PLANNING}, {LIST_KEY_COMPLETED}, {LIST_KEY_PAUSED}, {LIST_KEY_REPEATING}\n"
 
@@ -33,6 +35,10 @@ def __print_program_end() -> None:
 
 def __init_app(args: argparse) -> None:
     if args.from_list is not None:
+        print('\n-------------------        Anime Scrobbler        -------------------\n')
+        EventLogHelper.log_info(f"Starting application with parameter agr.from_list -> {args.from_list}",
+                                'manage.py',
+                                inspect.currentframe().f_code.co_name)
         AppController(args.from_list).start_application()
     else:
         print()
@@ -40,5 +46,11 @@ def __init_app(args: argparse) -> None:
 
 
 if __name__ == '__main__':
-    cli_args = __init_cli().parse_args()
-    __init_app(cli_args)
+    try:
+        cli_args = __init_cli().parse_args()
+        __init_app(cli_args)
+    except Exception as e:
+        EventLogHelper.log_error(f"Uncaught exception thrown while starting app:\n"
+                                 f"Details -> {e}",
+                                 __name__,
+                                 inspect.currentframe().f_code.co_name)

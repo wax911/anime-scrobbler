@@ -1,3 +1,2 @@
-from .database import PickleStore as AppStore
-from .model import AppState, AppStateWrapper
-
+from .database import AppStore
+from .model import DownloadableQueue
