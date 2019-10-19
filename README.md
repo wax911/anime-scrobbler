@@ -1,6 +1,7 @@
 # Anime Scrobbler (_for research purposes of course_)
 
-Yet another potentially useless utility to automatically download missing shows from your anilist list.
+Just an automation utility for fun, ~~potentially useless?~~  to download missing shows from 
+your [AniList](https://anilist.co) collection not present in a plex media server.
 
 ## Dependencies
 
@@ -177,4 +178,18 @@ anitopy.parse('[TaigaSubs]_Toradora!_(2008)_-_01v2_-_Tiger_and_Dragon_[1280x720_
     'video_resolution': '1280x720',
     'video_term': 'H.264'
 }
+```
+
+### [Unidecode](https://pypi.org/project/Unidecode/)
+
+> The module exports a function that takes an Unicode object (Python 2.x) or string (Python 3.x) and returns a string (that can be encoded to ASCII bytes in Python 3.x):
+
+```python
+from unidecode import unidecode
+unidecode(u'ko\u017eu\u0161\u010dek')
+# outputs > 'kozuscek'
+unidecode(u'30 \U0001d5c4\U0001d5c6/\U0001d5c1')
+# outputs > '30 km/h'
+unidecode(u"\u5317\u4EB0")
+# outputs > 'Bei Jing '
 ```
