@@ -50,6 +50,21 @@ class NyaaControllerHelper:
                     return anime_info.has_season_information(), season_item
         return False, None
 
+    def _add_anime_info(self, search_results: Optional[List[TorrentInfo]]):
+        torrents: List[Optional[TorrentInfo]] = list()
+
+        for search_result in search_results:
+            sleep(self.sleep_duration)
+            if not search_result.added_anime_info():
+                continue
+
+            anime_info = search_result.anime_info
+            if f"[{anime_info.release_group}]" != self.config.torrent_preferred_group:
+                continue
+            torrents.append(search_result)
+
+        return torrents
+
     def _find_missing_episodes(
             self,
             show: Optional[Show],
@@ -176,7 +191,7 @@ class NyaaController(NyaaControllerHelper):
             if torrent_info is not None:
                 torrent_info_results.append(torrent_info)
 
-        return torrent_info_results
+        return self._add_anime_info(torrent_info_results)
 
     @staticmethod
     def download_torrent_file(torrent_info: TorrentInfo, config: AppConfig) -> bool:
