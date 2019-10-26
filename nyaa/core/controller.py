@@ -105,18 +105,32 @@ class NyaaControllerHelper:
 class NyaaController(NyaaControllerHelper):
 
     @staticmethod
-    def __search_for_matching_until_found(search_page: int, search_terms: List[str]):
-        for search_term in search_terms:
-            # noinspection PyTypeChecker,PyCallByClass
-            search_results = Nyaa.search(keyword=search_term, category='1', page=search_page)
-            if search_results:
-                EventLogHelper.log_info(
-                    f"Nyaa search results found for search term: `{search_term}` | on page: `{search_page}`"
-                    f" | found `{len(search_results)}` results",
-                    "NyaaController",
+    def __search_for_matching_until_found(search_page: int, search_terms: List[str], retry_count: int = 0):
+        try:
+            for search_term in search_terms:
+                # noinspection PyTypeChecker,PyCallByClass
+                search_results = Nyaa.search(keyword=search_term, category='1', page=search_page)
+                if search_results:
+                    EventLogHelper.log_info(
+                        f"Nyaa search results found for search term: `{search_term}` | on page: `{search_page}`"
+                        f" | found `{len(search_results)}` results",
+                        "NyaaController",
+                        inspect.currentframe().f_code.co_name
+                    )
+                    return search_results
+        except Exception as e:
+            if retry_count != 3:
+                retries = retry_count + 1
+                EventLogHelper.log_warning(
+                    f"Error encountered searching for search terms, retrying in 1 minute! -> "
+                    f"Retry attempt count `{retries}` | {e}",
+                    "__search_for_matching_until_found",
                     inspect.currentframe().f_code.co_name
                 )
-                return search_results
+                sleep(60)
+                NyaaController.__search_for_matching_until_found(search_page, search_terms, retries)
+            else:
+                raise RuntimeError("Aborting search operation after 3 consecutive failed retry attempts!")
 
     def search_for_shows(
             self,
