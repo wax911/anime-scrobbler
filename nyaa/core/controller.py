@@ -19,7 +19,7 @@ class NyaaControllerHelper:
 
     def __init__(self) -> None:
         super().__init__()
-        self.sleep_duration: float = .25
+        self.sleep_duration: float = 5.55
         self.model_helper = NyaaModelHelper()
         self.config: Optional[AppConfig] = None
 
