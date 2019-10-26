@@ -19,7 +19,7 @@ class NyaaControllerHelper:
 
     def __init__(self) -> None:
         super().__init__()
-        self.sleep_duration: float = 5.55
+        self.sleep_duration: float = .25
         self.model_helper = NyaaModelHelper()
         self.config: Optional[AppConfig] = None
 
@@ -121,13 +121,15 @@ class NyaaController(NyaaControllerHelper):
         except Exception as e:
             if retry_count != 3:
                 retries = retry_count + 1
+                print('\n<------------------------------------------------------------>\n')
                 EventLogHelper.log_warning(
-                    f"Error encountered searching for search terms, retrying in 1 minute! -> "
-                    f"Retry attempt count `{retries}` | {e}",
+                    f"Error encountered searching for search terms: `{search_terms}`, retrying in 1 minute! -> "
+                    f"current attempt count: `{retries}` | failure reason: `{e}`",
                     "__search_for_matching_until_found",
                     inspect.currentframe().f_code.co_name
                 )
                 sleep(60)
+                print('\n<------------------------------------------------------------>\n')
                 NyaaController.__search_for_matching_until_found(search_page, search_terms, retries)
             else:
                 raise RuntimeError("Aborting search operation after 3 consecutive failed retry attempts!")
@@ -188,7 +190,6 @@ class NyaaController(NyaaControllerHelper):
         search_results: List[Dict[Optional[str], Optional[str]]] = list()
 
         while has_more_results:
-            sleep(self.sleep_duration)
             temp_search_results = self.__search_for_matching_until_found(
                 search_page, self._build_search_terms(self.config, media_entry)
             )
@@ -197,13 +198,14 @@ class NyaaController(NyaaControllerHelper):
                 search_page += 1
             else:
                 has_more_results = False
+            sleep(self.sleep_duration)
 
         torrent_info_results: List[Optional[TorrentInfo]] = list()
         for search_result in search_results:
-            sleep(self.sleep_duration)
             torrent_info = self.model_helper.create_data_class(search_result)
             if torrent_info is not None:
                 torrent_info_results.append(torrent_info)
+            sleep(self.sleep_duration)
 
         return self._add_anime_info(torrent_info_results)
 
@@ -235,6 +237,7 @@ class NyaaController(NyaaControllerHelper):
                     write_mode='wb'
                 )
             else:
+                print('\n<------------------------------------------------------------>\n')
                 EventLogHelper.log_info(
                     f"Requesting torrent for download failed : {response}\n"
                     f"Retrying in 5 seconds..",
@@ -243,7 +246,7 @@ class NyaaController(NyaaControllerHelper):
                 )
                 sleep(5)
                 NyaaController.download_torrent_file(torrent_info, config)
-            print('<------------------------------------------------------------>')
+                print('\n<------------------------------------------------------------>\n')
         except Exception as e:
             EventLogHelper.log_error(
                 f"Encountered exception while downloading torrent file -> {e}",
