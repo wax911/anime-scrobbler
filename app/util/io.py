@@ -141,8 +141,7 @@ class EventLogHelper:
                             level=logging.INFO)
         bundle = {'module_name': module_name, 'source': function_name}
         logger = logging.getLogger(__name__)
-        logger.info(f"\n---------------------------------------------------------------\n"
-                    f"{message}\n", extra=bundle)
+        logger.info(f"{message}", extra=bundle)
         if print_to_screen:
             print(f"{message}")
 
@@ -154,8 +153,7 @@ class EventLogHelper:
                             level=logging.WARNING)
         bundle = {'module_name': module_name, 'source': function_name}
         logger = logging.getLogger(__name__)
-        logger.warning(f"\n---------------------------------------------------------------\n"
-                       f"{message}\n", extra=bundle)
+        logger.warning(f"{message}", extra=bundle)
         print(f"{message}")
 
     @staticmethod
@@ -166,6 +164,5 @@ class EventLogHelper:
                             level=log_level)
         bundle = {'module_name': module_name, 'source': function_name}
         logger = logging.getLogger(__name__)
-        logger.error(f"\n---------------------------------------------------------------\n"
-                     f"{message}\n", extra=bundle)
+        logger.error(f"{message}", extra=bundle)
         print(f"{message}")
