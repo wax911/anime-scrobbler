@@ -105,18 +105,34 @@ class NyaaControllerHelper:
 class NyaaController(NyaaControllerHelper):
 
     @staticmethod
-    def __search_for_matching_until_found(search_page: int, search_terms: List[str]):
-        for search_term in search_terms:
-            # noinspection PyTypeChecker,PyCallByClass
-            search_results = Nyaa.search(keyword=search_term, category='1', page=search_page)
-            if search_results:
-                EventLogHelper.log_info(
-                    f"Nyaa search results found for search term: `{search_term}` | on page: `{search_page}`"
-                    f" | found `{len(search_results)}` results",
-                    "NyaaController",
+    def __search_for_matching_until_found(search_page: int, search_terms: List[str], retry_count: int = 0):
+        try:
+            for search_term in search_terms:
+                # noinspection PyTypeChecker,PyCallByClass
+                search_results = Nyaa.search(keyword=search_term, category='1', page=search_page)
+                if search_results:
+                    EventLogHelper.log_info(
+                        f"Nyaa search results found for search term: `{search_term}` | on page: `{search_page}`"
+                        f" | found `{len(search_results)}` results",
+                        "NyaaController",
+                        inspect.currentframe().f_code.co_name
+                    )
+                    return search_results
+        except Exception as e:
+            if retry_count != 3:
+                retries = retry_count + 1
+                print('\n<------------------------------------------------------------>\n')
+                EventLogHelper.log_warning(
+                    f"Error encountered searching for search terms: `{search_terms}`, retrying in 1 minute! -> "
+                    f"current attempt count: `{retries}` | failure reason: `{e}`",
+                    "__search_for_matching_until_found",
                     inspect.currentframe().f_code.co_name
                 )
-                return search_results
+                sleep(60)
+                print('\n<------------------------------------------------------------>\n')
+                NyaaController.__search_for_matching_until_found(search_page, search_terms, retries)
+            else:
+                raise RuntimeError("Aborting search operation after 3 consecutive failed retry attempts!")
 
     def search_for_shows(
             self,
@@ -174,7 +190,6 @@ class NyaaController(NyaaControllerHelper):
         search_results: List[Dict[Optional[str], Optional[str]]] = list()
 
         while has_more_results:
-            sleep(self.sleep_duration)
             temp_search_results = self.__search_for_matching_until_found(
                 search_page, self._build_search_terms(self.config, media_entry)
             )
@@ -183,13 +198,14 @@ class NyaaController(NyaaControllerHelper):
                 search_page += 1
             else:
                 has_more_results = False
+            sleep(self.sleep_duration)
 
         torrent_info_results: List[Optional[TorrentInfo]] = list()
         for search_result in search_results:
-            sleep(self.sleep_duration)
             torrent_info = self.model_helper.create_data_class(search_result)
             if torrent_info is not None:
                 torrent_info_results.append(torrent_info)
+            sleep(self.sleep_duration)
 
         return self._add_anime_info(torrent_info_results)
 
@@ -221,6 +237,7 @@ class NyaaController(NyaaControllerHelper):
                     write_mode='wb'
                 )
             else:
+                print('\n<------------------------------------------------------------>\n')
                 EventLogHelper.log_info(
                     f"Requesting torrent for download failed : {response}\n"
                     f"Retrying in 5 seconds..",
@@ -229,7 +246,7 @@ class NyaaController(NyaaControllerHelper):
                 )
                 sleep(5)
                 NyaaController.download_torrent_file(torrent_info, config)
-            print('<------------------------------------------------------------>')
+                print('\n<------------------------------------------------------------>\n')
         except Exception as e:
             EventLogHelper.log_error(
                 f"Encountered exception while downloading torrent file -> {e}",
