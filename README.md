@@ -83,18 +83,22 @@ Nyaa.search(keyword="Shoukoku no Altair", category=1)
 ```
 
 > Returns a list of dictionaries like this
+<!-- 
+Please use https://jsonformatter.curiousconcept.com/
+to validate && autocorrect json so that you can easily place it in README files
+-->
 ```json
 {
-    'category': "Anime - English-translated",
-    'url': "https://nyaa.si/view/968600",
-    'name': "[HorribleSubs] Shoukoku no Altair - 14 [720p].mkv",
-    'download_url': "https://nyaa.si/download/968600.torrent",
-    'magnet': <magnet torrent URI>
-    'size': "317.2 MiB",
-    'date': "2017-10-13 20:16",
-    'seeders': "538",
-    'leechers': "286",
-    'completed_downloads': "852"
+   "category": "Anime - English-translated",
+   "url": "https://nyaa.si/view/968600",
+   "name": "[HorribleSubs] Shoukoku no Altair - 14 [720p].mkv",
+   "download_url": "https://nyaa.si/download/968600.torrent",
+   "magnet": "<magnet torrent URI>",
+   "size": "317.2 MiB",
+   "date": "2017-10-13 20:16",
+   "seeders": "538",
+   "leechers": "286",
+   "completed_downloads": "852"
 }
 ```
 
