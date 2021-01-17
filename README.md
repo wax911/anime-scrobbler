@@ -234,18 +234,18 @@ anitopy.parse('[TaigaSubs]_Toradora!_(2008)_-_01v2_-_Tiger_and_Dragon_[1280x720_
 > Will result in the following:
 ```json
 {
-    'anime_title': 'Toradora!',
-    'anime_year': '2008',
-    'audio_term': 'FLAC',
-    'episode_number': '01',
-    'episode_title': 'Tiger and Dragon',
-    'file_checksum': '1234ABCD',
-    'file_extension': 'mkv',
-    'file_name': '[TaigaSubs]_Toradora!_(2008)_-_01v2_-_Tiger_and_Dragon_[1280x720_H.264_FLAC][1234ABCD].mkv',
-    'release_group': 'TaigaSubs',
-    'release_version': '2',
-    'video_resolution': '1280x720',
-    'video_term': 'H.264'
+   "anime_title": "Toradora!",
+   "anime_year": "2008",
+   "audio_term": "FLAC",
+   "episode_number": "01",
+   "episode_title": "Tiger and Dragon",
+   "file_checksum": "1234ABCD",
+   "file_extension": "mkv",
+   "file_name": "[TaigaSubs]_Toradora!_(2008)_-_01v2_-_Tiger_and_Dragon_[1280x720_H.264_FLAC][1234ABCD].mkv",
+   "release_group": "TaigaSubs",
+   "release_version": "2",
+   "video_resolution": "1280x720",
+   "video_term": "H.264"
 }
 ```
 
