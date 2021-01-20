@@ -83,18 +83,22 @@ Nyaa.search(keyword="Shoukoku no Altair", category=1)
 ```
 
 > Returns a list of dictionaries like this
+<!-- 
+Please use https://jsonformatter.curiousconcept.com/
+to validate && autocorrect json so that you can easily place it in README files
+-->
 ```json
 {
-    'category': "Anime - English-translated",
-    'url': "https://nyaa.si/view/968600",
-    'name': "[HorribleSubs] Shoukoku no Altair - 14 [720p].mkv",
-    'download_url': "https://nyaa.si/download/968600.torrent",
-    'magnet': <magnet torrent URI>
-    'size': "317.2 MiB",
-    'date': "2017-10-13 20:16",
-    'seeders': "538",
-    'leechers': "286",
-    'completed_downloads': "852"
+   "category": "Anime - English-translated",
+   "url": "https://nyaa.si/view/968600",
+   "name": "[HorribleSubs] Shoukoku no Altair - 14 [720p].mkv",
+   "download_url": "https://nyaa.si/download/968600.torrent",
+   "magnet": "<magnet torrent URI>",
+   "size": "317.2 MiB",
+   "date": "2017-10-13 20:16",
+   "seeders": "538",
+   "leechers": "286",
+   "completed_downloads": "852"
 }
 ```
 
@@ -230,18 +234,18 @@ anitopy.parse('[TaigaSubs]_Toradora!_(2008)_-_01v2_-_Tiger_and_Dragon_[1280x720_
 > Will result in the following:
 ```json
 {
-    'anime_title': 'Toradora!',
-    'anime_year': '2008',
-    'audio_term': 'FLAC',
-    'episode_number': '01',
-    'episode_title': 'Tiger and Dragon',
-    'file_checksum': '1234ABCD',
-    'file_extension': 'mkv',
-    'file_name': '[TaigaSubs]_Toradora!_(2008)_-_01v2_-_Tiger_and_Dragon_[1280x720_H.264_FLAC][1234ABCD].mkv',
-    'release_group': 'TaigaSubs',
-    'release_version': '2',
-    'video_resolution': '1280x720',
-    'video_term': 'H.264'
+   "anime_title": "Toradora!",
+   "anime_year": "2008",
+   "audio_term": "FLAC",
+   "episode_number": "01",
+   "episode_title": "Tiger and Dragon",
+   "file_checksum": "1234ABCD",
+   "file_extension": "mkv",
+   "file_name": "[TaigaSubs]_Toradora!_(2008)_-_01v2_-_Tiger_and_Dragon_[1280x720_H.264_FLAC][1234ABCD].mkv",
+   "release_group": "TaigaSubs",
+   "release_version": "2",
+   "video_resolution": "1280x720",
+   "video_term": "H.264"
 }
 ```
 
